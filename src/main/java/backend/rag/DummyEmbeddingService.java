@@ -1,4 +1,4 @@
-package backendRAG;
+package backend.rag;
 
 public class DummyEmbeddingService implements EmbeddingService {
     @Override

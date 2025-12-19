@@ -1,4 +1,4 @@
-package backendRAG;
+package backend.rag;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;

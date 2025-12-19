@@ -1,4 +1,4 @@
-package org.example.ap_steve.frontend.student;
+package frontend.lecturer;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -12,23 +12,39 @@ import javafx.stage.Stage;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
-public class StudentHome {
 
-    private final String userName;
+public class LecturerHome {
 
-    public StudentHome(String userName) {
+
+
+
+    private String userName;
+
+
+
+
+    public LecturerHome(String userName) {
         this.userName = userName;
     }
+
+
+
 
     public void show(Stage stage) {
         //Main container
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(20));
 
+
+
+
         //Header with logo and title
         HBox header  = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(10,  20, 20, 20));
+
+
+
 
         //STEVE Image
         Image avatar = new Image(getClass().getResource("/images/STEVE.png").toExternalForm());
@@ -37,6 +53,9 @@ public class StudentHome {
         ImgSteve.setPreserveRatio(true);
         header.getChildren().add(ImgSteve);
 
+
+
+
         //WelcomePage
         VBox WelBox = new VBox(30);
         WelBox.setAlignment(Pos.CENTER_LEFT);
@@ -44,23 +63,33 @@ public class StudentHome {
         welcomeLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
 
 
-        Label messageLabel = new Label("Hello there " + userName + "! Click on a module and lets get straight to learning!");
+
+
+        Label messageLabel = new Label("Hello there " + userName + "! Click on a module and lets get straight to teaching!");
         messageLabel.setFont(Font.font("Arial", 16));
         messageLabel.setWrapText(true);
         messageLabel.setMaxWidth(400);
+
+
 
 
         WelBox.getChildren().addAll(welcomeLabel, messageLabel);
         header.getChildren().add(WelBox);
 
 
+
+
         root.setTop(header);
+
+
 
 
         //6 Module Buttons
         VBox ModVBox = new VBox(30);
         ModVBox.setAlignment(Pos.CENTER);
         ModVBox.setPadding(new Insets(40));
+
+
 
 
         //Modules 1-3
@@ -71,6 +100,8 @@ public class StudentHome {
         }
 
 
+
+
         //Modules 4-6
         HBox row2 = new HBox(30);
         row2.setAlignment(Pos.CENTER);
@@ -79,8 +110,12 @@ public class StudentHome {
         }
 
 
+
+
         ModVBox.getChildren().addAll(row1, row2);
         root.setCenter(ModVBox);
+
+
 
 
         //Scene
@@ -89,6 +124,8 @@ public class StudentHome {
         stage.setTitle("Home Page-Student");
         stage.show();
     }
+
+
 
 
     private Button createModuleButton(String moduleName) {

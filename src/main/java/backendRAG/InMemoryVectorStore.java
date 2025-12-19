@@ -1,4 +1,4 @@
-package org.example.ap_steve.backend.rag;
+package backendRAG;
 
 import java.util.HashMap;
 import java.util.Map;

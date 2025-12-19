@@ -1,4 +1,4 @@
-package org.example.ap_steve.frontend;
+package frontend;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;

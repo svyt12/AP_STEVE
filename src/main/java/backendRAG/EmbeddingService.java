@@ -1,4 +1,4 @@
-package org.example.ap_steve.backend.rag;
+package backendRAG;
 
 public interface EmbeddingService {
     float[] embed(String text);

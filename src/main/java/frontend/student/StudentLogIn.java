@@ -1,4 +1,4 @@
-package org.example.ap_steve.frontend.student;
+package frontend.student;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
@@ -48,7 +48,7 @@ public class StudentLogIn extends Application {
 
 
         //Taylor's UNI Image
-        Image Taylors = new Image(getClass().getResource("/images/Logo_of_Taylor's_University.png").toExternalForm());
+        Image Taylors = new Image(getClass().getResource("/images/TaylorUniLogo.png").toExternalForm());
         ImageView TaylorsLogo = new ImageView(Taylors);
         TaylorsLogo.setFitWidth(300);
         TaylorsLogo.setPreserveRatio(true);
@@ -61,7 +61,7 @@ public class StudentLogIn extends Application {
 
 
         //MyTIMeS Image
-        Image myTimes = new Image(getClass().getResource("/images/myTIMeS logo.png").toExternalForm());
+        Image myTimes = new Image(getClass().getResource("/images/myTIMeS.png").toExternalForm());
         ImageView myTimesLogo = new ImageView(myTimes);
         myTimesLogo.setFitWidth(300);
         myTimesLogo.setPreserveRatio(true);

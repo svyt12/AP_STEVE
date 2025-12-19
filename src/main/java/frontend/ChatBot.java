@@ -1,4 +1,4 @@
-package org.example.ap_steve.frontend;
+package frontend;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
@@ -17,7 +17,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 
 
-public class ChatBot extends Application {
+public class ChatBot extends App {
 
 
     @Override

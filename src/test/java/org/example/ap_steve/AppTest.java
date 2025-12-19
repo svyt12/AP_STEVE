@@ -1,19 +1,19 @@
 package org.example.ap_steve;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.junit.jupiter.api.Test;
-
-/**
- * Unit test for simple App.
- */
 public class AppTest {
+    public static void main(String[] args) {
+        System.out.println("Testing dependencies...");
 
-    /**
-     * Rigorous Test :-)
-     */
-    @Test
-    public void shouldAnswerWithTrue() {
-        assertTrue(true);
+        // Test Jackson
+        ObjectMapper mapper = new ObjectMapper();
+        System.out.println("Jackson loaded: " + mapper);
+
+        // Test HttpClient (Java 11+)
+        java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+        System.out.println("HttpClient loaded: " + client);
+
+        System.out.println("All good!");
     }
 }

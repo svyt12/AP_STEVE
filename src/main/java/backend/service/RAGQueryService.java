@@ -1,47 +1,78 @@
 package backend.service;
 
-import backend.rag.InMemoryVectorStore;
+import backend.rag.EmbeddingService;
+import backend.rag.VectorStore;
 import org.springframework.stereotype.Service;
-import java.util.Map;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class RAGQueryService {
-    private final InMemoryVectorStore vectorStore;
+    private final VectorStore vectorStore;  //interface
+    private final EmbeddingService embeddingService;
 
-    public RAGQueryService(InMemoryVectorStore vectorStore) {
+    public RAGQueryService(VectorStore vectorStore, EmbeddingService embeddingService) {
         this.vectorStore = vectorStore;
+        this.embeddingService = embeddingService;
+        System.out.println("✅ RAGQueryService initialized");
     }
 
     public String queryDocuments(String question) {
-        // Simple cosine similarity search (dummy implementation)
-        // In real RAG, you'd use proper vector similarity search
+        System.out.println("\n📝 Question: " + question);
 
-        Map<String, float[]> vectors = vectorStore.getVectors();
+        try {
+            if (vectorStore.getContents().isEmpty()) {
+                return "I don't have any documents to search through. " +
+                        "Please upload some PDF documents first using the Upload page.";
+            }
 
-        if (vectors.isEmpty()) {
-            return "I don't have any documents to search through. " +
-                    "Please upload some documents first using the Upload page.";
+            System.out.println("   Documents in store: " + vectorStore.getContents().size());
+
+            System.out.println("   Creating embedding for question...");
+            float[] questionEmbedding = embeddingService.embed(question);
+            System.out.println("   Embedding created: " + questionEmbedding.length + " dimensions");
+
+            List<VectorStore.SearchResult> similarDocs =
+                    vectorStore.searchSimilar(questionEmbedding, 3);
+
+            if (similarDocs.isEmpty()) {
+                return "I couldn't find any relevant information in the documents " +
+                        "to answer your question: \"" + question + "\"";
+            }
+
+            StringBuilder context = new StringBuilder();
+            for (VectorStore.SearchResult doc : similarDocs) {
+                String excerpt = doc.content.length() > 300 ?
+                        doc.content.substring(0, 300) + "..." : doc.content;
+                context.append("[Relevance: ")
+                        .append(String.format("%.1f", doc.similarity * 100))
+                        .append("%] ")
+                        .append(excerpt)
+                        .append("\n\n");
+            }
+
+            // return the found context
+            // add OpenAI chat API integration here
+            String answer = buildAnswerFromContext(context.toString(), question);
+
+            System.out.println("✅ Query completed successfully");
+            return answer;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error in RAGQueryService: " + e.getMessage());
+            e.printStackTrace();
+            return "Sorry, there was an error processing your question: " + e.getMessage();
         }
+    }
 
-        // Dummy search - just return first document's content
-        Map<String, String> contents = vectorStore.getContents();
-        if (!contents.isEmpty()) {
-            String firstDocId = contents.keySet().iterator().next();
-            String content = contents.get(firstDocId);
+    private String buildAnswerFromContext(String context, String question) {
+        // For now, return a simple answer with the context
+        // Later you'll integrate OpenAI Chat API here
 
-            // Extract first 200 chars as context
-            String context = content.length() > 200 ?
-                    content.substring(0, 200) + "..." : content;
-
-            return "Based on your documents, here's what I found:\n\n" +
-                    "Context: " + context + "\n\n" +
-                    "Answer to your question \"" + question + "\": " +
-                    "This is a dummy response. In a real RAG system, " +
-                    "I would search through all documents and generate " +
-                    "a proper answer using an LLM.";
-        }
-
-        return "I found documents but couldn't retrieve the content. " +
-                "Please try uploading the documents again.";
+        return "Based on your documents, here's what I found:\n\n" +
+                "Context from documents:\n" + context + "\n" +
+                "Question: " + question + "\n\n" +
+                "(Note: In the next step, this will be sent to OpenAI for a proper answer)";
     }
 }

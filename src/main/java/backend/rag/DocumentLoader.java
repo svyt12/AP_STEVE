@@ -2,10 +2,11 @@ package backend.rag;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
-
+import org.springframework.stereotype.Component;
 import java.io.File;
 import java.util.UUID;
 
+@Component
 public class DocumentLoader {
 
     private final VectorStore vectorStore;

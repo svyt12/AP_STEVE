@@ -1,12 +1,19 @@
 package backend;
 
+import backend.config.OpenAiProperties;
+import backend.config.RagProperties;
 import backend.rag.*;
 import backend.service.RAGQueryService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
+@EnableConfigurationProperties({
+        RagProperties.class,
+        OpenAiProperties.class
+})
 public class Application {
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
@@ -24,7 +31,7 @@ public class Application {
 
     @Bean
     public EmbeddingService embeddingService() {
-        return new DummyEmbeddingService();
+        return new OpenAiEmbeddingService();
     }
 
     @Bean
@@ -33,7 +40,8 @@ public class Application {
     }
 
     @Bean
-    public RAGQueryService ragQueryService(VectorStore vectorStore) {
-        return new RAGQueryService((InMemoryVectorStore) vectorStore);
+    public RAGQueryService ragQueryService(VectorStore vectorStore, EmbeddingService embeddingService) {
+        System.out.println("✅ Creating RAGQueryService bean");
+        return new RAGQueryService(vectorStore, embeddingService);
     }
 }

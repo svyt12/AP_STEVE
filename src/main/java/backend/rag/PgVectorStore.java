@@ -4,7 +4,6 @@ import org.springframework.stereotype.Component;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class PgVectorStore implements VectorStore {
@@ -16,15 +15,16 @@ public class PgVectorStore implements VectorStore {
     public PgVectorStore(DataSource dataSource) {
         this.dataSource = dataSource;
         initializeDatabase();
-        System.out.println("✅ PgVectorStore initialized");
+        System.out.println("✅ PgVectorStore initialized (using REAL arrays)");
     }
 
     private void initializeDatabase() {
+        // CHANGED: Use REAL[] instead of VECTOR
         String createTableSQL = String.format("""
             CREATE TABLE IF NOT EXISTS %s (
                 id VARCHAR(255) PRIMARY KEY,
                 content TEXT NOT NULL,
-                embedding VECTOR(%d),
+                embedding REAL[%d],  -- REAL array type
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """, TABLE_NAME, EMBEDDING_DIMENSION);
@@ -32,13 +32,11 @@ public class PgVectorStore implements VectorStore {
         try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement()) {
 
-            // Enable pgvector extension
-            stmt.execute("CREATE EXTENSION IF NOT EXISTS vector");
-
-            // Create table
+            // REMOVED: No need for CREATE EXTENSION vector
+            // Create table only
             stmt.execute(createTableSQL);
 
-            System.out.println("✅ Database table initialized: " + TABLE_NAME);
+            System.out.println("✅ Database table initialized with REAL arrays: " + TABLE_NAME);
 
         } catch (SQLException e) {
             System.err.println("❌ Failed to initialize database: " + e.getMessage());
@@ -50,19 +48,20 @@ public class PgVectorStore implements VectorStore {
     public void store(String id, String content, float[] embedding) {
         validateEmbeddingDimension(embedding);
 
+        // CHANGED: Use ?::real[] instead of CAST(? AS vector)
         String sql = String.format("""
-        INSERT INTO %s (id, content, embedding) 
-        VALUES (?, ?, CAST(? AS vector))
-        ON CONFLICT (id) 
-        DO UPDATE SET content = EXCLUDED.content, embedding = EXCLUDED.embedding
-        """, TABLE_NAME);
+            INSERT INTO %s (id, content, embedding) 
+            VALUES (?, ?, ?::real[])
+            ON CONFLICT (id) 
+            DO UPDATE SET content = EXCLUDED.content, embedding = EXCLUDED.embedding
+            """, TABLE_NAME);
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, id);
             pstmt.setString(2, content);
-            pstmt.setString(3, convertArrayToString(embedding)); // Keep as string
+            pstmt.setString(3, convertArrayToPostgresArray(embedding)); // Uses PostgreSQL array format
 
             pstmt.executeUpdate();
             System.out.println("✅ Stored document with ID: " + id);
@@ -77,23 +76,33 @@ public class PgVectorStore implements VectorStore {
     public List<SearchResult> searchSimilar(float[] queryEmbedding, int topK) {
         validateEmbeddingDimension(queryEmbedding);
 
+        // CHANGED: Manual cosine similarity calculation for REAL arrays
         String sql = String.format("""
-        SELECT id, content, 
-               (1 - (embedding <=> CAST(? AS vector))) as similarity
-        FROM %s
-        ORDER BY embedding <=> CAST(? AS vector)
-        LIMIT ?
-        """, TABLE_NAME);
+            WITH query_vector AS (
+                SELECT ?::real[] as qvec
+            )
+            SELECT id, content,
+                   (1 - (
+                       SELECT COALESCE(
+                           SUM(a*b) / NULLIF(SQRT(SUM(a*a)) * SQRT(SUM(b*b)), 0),
+                           0
+                       )
+                       FROM unnest(embedding, (SELECT qvec FROM query_vector)) AS t(a,b)
+                   )) as similarity
+            FROM %s, query_vector
+            WHERE embedding IS NOT NULL
+            ORDER BY similarity DESC
+            LIMIT ?
+            """, TABLE_NAME);
 
         List<SearchResult> results = new ArrayList<>();
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            String embeddingStr = convertArrayToString(queryEmbedding);
+            String embeddingStr = convertArrayToPostgresArray(queryEmbedding);
             pstmt.setString(1, embeddingStr);
-            pstmt.setString(2, embeddingStr);
-            pstmt.setInt(3, topK);
+            pstmt.setInt(2, topK);
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
@@ -159,8 +168,8 @@ public class PgVectorStore implements VectorStore {
 
             while (rs.next()) {
                 String id = rs.getString("id");
-                String vectorText = rs.getString("embedding");
-                float[] vector = parseVectorString(vectorText);
+                String arrayText = rs.getString("embedding");
+                float[] vector = parsePostgresArray(arrayText);
                 vectors.put(id, vector);
             }
 
@@ -188,29 +197,31 @@ public class PgVectorStore implements VectorStore {
         }
     }
 
-    // Helper method to convert float array to PostgreSQL vector string format
-    private String convertArrayToString(float[] array) {
+    // CHANGED: Convert float array to PostgreSQL array format {1.0,2.0,3.0}
+    private String convertArrayToPostgresArray(float[] array) {
         StringBuilder sb = new StringBuilder();
-        sb.append("[");
+        sb.append("{");
         for (int i = 0; i < array.length; i++) {
             if (i > 0) sb.append(",");
             sb.append(array[i]);
         }
-        sb.append("]");
+        sb.append("}");
         return sb.toString();
     }
 
-    // Helper method to parse PostgreSQL vector string back to float array
-    private float[] parseVectorString(String vectorText) {
-        // Remove brackets and split by commas
-        String cleaned = vectorText.replace("[", "").replace("]", "");
-        String[] parts = cleaned.split(",");
+    // CHANGED: Parse PostgreSQL array string {1.0,2.0,3.0} back to float array
+    private float[] parsePostgresArray(String arrayText) {
+        // Remove curly braces and split by commas
+        String cleaned = arrayText.replace("{", "").replace("}", "");
+        if (cleaned.isEmpty()) {
+            return new float[0];
+        }
 
+        String[] parts = cleaned.split(",");
         float[] vector = new float[parts.length];
         for (int i = 0; i < parts.length; i++) {
             vector[i] = Float.parseFloat(parts[i].trim());
         }
-
         return vector;
     }
 
@@ -245,31 +256,32 @@ public class PgVectorStore implements VectorStore {
         return 0;
     }
 
+    // CHANGED: Create GIN index for array similarity (optional optimization)
     public void createIndex() {
         String sql = String.format("""
-            CREATE INDEX IF NOT EXISTS embedding_idx ON %s 
-            USING ivfflat (embedding vector_cosine_ops)
+            CREATE INDEX IF NOT EXISTS embedding_gin_idx ON %s 
+            USING GIN (embedding)
             """, TABLE_NAME);
 
         try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement()) {
 
             stmt.execute(sql);
-            System.out.println("✅ Created vector index for faster similarity search");
+            System.out.println("✅ Created GIN index for array operations");
 
         } catch (SQLException e) {
-            System.err.println("❌ Failed to create index: " + e.getMessage());
+            System.err.println("⚠️  Could not create GIN index (not required for basic operations): " + e.getMessage());
         }
     }
 
     public void dropIndex() {
-        String sql = String.format("DROP INDEX IF EXISTS embedding_idx");
+        String sql = "DROP INDEX IF EXISTS embedding_gin_idx";
 
         try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement()) {
 
             stmt.execute(sql);
-            System.out.println("✅ Dropped vector index");
+            System.out.println("✅ Dropped GIN index");
 
         } catch (SQLException e) {
             System.err.println("❌ Failed to drop index: " + e.getMessage());
@@ -282,9 +294,10 @@ public class PgVectorStore implements VectorStore {
             throw new IllegalArgumentException("Contents and embeddings must have the same size");
         }
 
+        // CHANGED: Use ?::real[] for batch insert
         String sql = String.format("""
             INSERT INTO %s (id, content, embedding) 
-            VALUES (?, ?, ?::vector)
+            VALUES (?, ?, ?::real[])
             ON CONFLICT (id) 
             DO UPDATE SET content = EXCLUDED.content, embedding = EXCLUDED.embedding
             """, TABLE_NAME);
@@ -307,7 +320,7 @@ public class PgVectorStore implements VectorStore {
 
                 pstmt.setString(1, id);
                 pstmt.setString(2, content);
-                pstmt.setString(3, convertArrayToString(embedding));
+                pstmt.setString(3, convertArrayToPostgresArray(embedding));
                 pstmt.addBatch();
             }
 

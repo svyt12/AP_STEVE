@@ -12,22 +12,15 @@ import javafx.stage.Stage;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
-
 public class LecturerHome {
-
-
 
 
     private String userName;
 
 
-
-
     public LecturerHome(String userName) {
         this.userName = userName;
     }
-
-
 
 
     public void show(Stage stage) {
@@ -36,14 +29,10 @@ public class LecturerHome {
         root.setPadding(new Insets(20));
 
 
-
-
         //Header with logo and title
         HBox header  = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(10,  20, 20, 20));
-
-
 
 
         //STEVE Image
@@ -54,15 +43,11 @@ public class LecturerHome {
         header.getChildren().add(ImgSteve);
 
 
-
-
         //WelcomePage
         VBox WelBox = new VBox(30);
         WelBox.setAlignment(Pos.CENTER_LEFT);
         Label welcomeLabel = new Label("S.T.E.V.E: ");
         welcomeLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-
-
 
 
         Label messageLabel = new Label("Hello there " + userName + "! Click on a module and lets get straight to teaching!");
@@ -71,25 +56,17 @@ public class LecturerHome {
         messageLabel.setMaxWidth(400);
 
 
-
-
         WelBox.getChildren().addAll(welcomeLabel, messageLabel);
         header.getChildren().add(WelBox);
 
 
-
-
         root.setTop(header);
-
-
 
 
         //6 Module Buttons
         VBox ModVBox = new VBox(30);
         ModVBox.setAlignment(Pos.CENTER);
         ModVBox.setPadding(new Insets(40));
-
-
 
 
         //Modules 1-3
@@ -100,8 +77,6 @@ public class LecturerHome {
         }
 
 
-
-
         //Modules 4-6
         HBox row2 = new HBox(30);
         row2.setAlignment(Pos.CENTER);
@@ -110,12 +85,8 @@ public class LecturerHome {
         }
 
 
-
-
         ModVBox.getChildren().addAll(row1, row2);
         root.setCenter(ModVBox);
-
-
 
 
         //Scene
@@ -126,12 +97,13 @@ public class LecturerHome {
     }
 
 
-
-
     private Button createModuleButton(String moduleName) {
         Button button = new Button(moduleName);
         button.setPrefSize(300, 100);
-        button.setOnAction(e -> {System.out.println(moduleName + " selected!");});
+        button.setOnAction(e -> {System.out.println(moduleName + " selected!");
+            UploadDocument uploadPage = new UploadDocument(moduleName);
+            Stage currentStage = (Stage) button.getScene().getWindow();
+            uploadPage.start(currentStage);});
         return button;
     }
 }

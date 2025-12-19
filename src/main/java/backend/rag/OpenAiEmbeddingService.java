@@ -105,7 +105,7 @@ public class OpenAiEmbeddingService implements EmbeddingService {
     }
 
     private float[] createDummyEmbedding(String text) {
-        System.out.println("📊 Creating dummy embedding for text length: " + text.length());
+        System.out.println("Creating dummy embedding for text length: " + text.length());
 
         // Create realistic-looking dummy embedding (same size as OpenAI's)
         float[] embedding = new float[1536]; // text-embedding-3-small has 1536 dimensions

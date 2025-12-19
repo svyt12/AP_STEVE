@@ -12,10 +12,12 @@ public class ChatService {
     private static final String CHAT_URL = "http://localhost:8080/api/chat/ask";
     private final HttpClient client;
     private final ObjectMapper objectMapper;
+    private final ChatService chatService;
 
     public ChatService() {
         this.client = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
+        this.chatService = new ChatService();
     }
 
     public String askQuestion(String question) throws Exception {

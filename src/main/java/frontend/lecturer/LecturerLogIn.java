@@ -1,5 +1,6 @@
 package frontend.lecturer;
 
+import frontend.student.StudentLogIn;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -11,10 +12,6 @@ import javafx.stage.Stage;
 import javafx.scene.control.Alert;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javax.swing.JOptionPane;
-import frontend.lecturer.LecturerLogIn;
-import frontend.student.StudentLogIn;
-
 
 public class LecturerLogIn extends Application {
 
@@ -51,7 +48,7 @@ public class LecturerLogIn extends Application {
 
 
         //Taylor's UNI Image
-        Image Taylors = new Image(getClass().getResource("/images/TaylorUniLogo.png").toExternalForm());
+        Image Taylors = new Image(getClass().getResource("/images/Logo_of_Taylor's_University.png").toExternalForm());
         ImageView TaylorsLogo = new ImageView(Taylors);
         TaylorsLogo.setFitWidth(300);
         TaylorsLogo.setPreserveRatio(true);
@@ -64,7 +61,7 @@ public class LecturerLogIn extends Application {
 
 
         //MyTIMeS Image
-        Image myTimes = new Image(getClass().getResource("/images/myTIMES.png").toExternalForm());
+        Image myTimes = new Image(getClass().getResource("/images/MyTIMeS logo.png").toExternalForm());
         ImageView myTimesLogo = new ImageView(myTimes);
         myTimesLogo.setFitWidth(300);
         myTimesLogo.setPreserveRatio(true);
@@ -92,10 +89,10 @@ public class LecturerLogIn extends Application {
         //Labeling
         Label Greeting = new Label("Hello Lecturer!");
         Greeting.setFont(Font.font(16));
-        Greeting.setPadding(new Insets(0, 0, 10, 0));
+        Greeting.setPadding(new Insets(0,0,10,0));
         Label LoginGuide = new Label("Please login with your MyTIMeS Account. ");
         LoginGuide.setFont(Font.font(16));
-        LoginGuide.setPadding(new Insets(0, 0, 20, 0));
+        LoginGuide.setPadding(new Insets(0,0,20,0));
 
 
         //StudentID Box
@@ -117,7 +114,6 @@ public class LecturerLogIn extends Application {
         loginbutton.setMaxWidth(100);
         loginbutton.setOnAction(e -> handleLogin());
 
-
         //Hyperlink for Staff to Student Page
         Hyperlink switchToStudentLink = new Hyperlink("If you're a student, click here.");
         switchToStudentLink.setStyle("-fx-font-size: 20;");
@@ -126,22 +122,19 @@ public class LecturerLogIn extends Application {
             studentApp.start(primaryStage);
         });
 
-
         //Main Components
         loginContent.getChildren().addAll(Greeting, LoginGuide, SIDField, passwordField);
 
-
         VBox buttonwithLinkContainer = new VBox(15);
         buttonwithLinkContainer.setAlignment(Pos.CENTER);
-        buttonwithLinkContainer.setPadding(new Insets(20, 0, 0, 0));
+        buttonwithLinkContainer.setPadding(new Insets(20,0,0,0));
         loginContent.getChildren().addAll(loginbutton, switchToStudentLink);
-
 
         loginContent.getChildren().addAll(buttonwithLinkContainer);
 
-
         StackPane centreContainer = new StackPane(loginContent);
         centreContainer.setAlignment(Pos.CENTER);
+
 
 
         // Scene and Stage
@@ -168,14 +161,19 @@ public class LecturerLogIn extends Application {
             alert.setHeaderText(null);
             alert.setContentText("Please enter both username and password.");
             alert.showAndWait();
-        } else {
+        }
+        else {
             LecturerHome homePageLecturer = new LecturerHome(username);
             homePageLecturer.show(getPrimaryStage());
         }
 
+
     }
+
 
     public static void main(String[] args) {
         launch(args);
     }
+
+
 }

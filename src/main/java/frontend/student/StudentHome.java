@@ -1,5 +1,6 @@
 package frontend.student;
 
+import frontend.ChatBot;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.geometry.Pos;
@@ -14,21 +15,26 @@ import javafx.scene.image.ImageView;
 
 public class StudentHome {
 
-    private final String userName;
+
+    private String userName;
+    private Stage primaryStage;
 
     public StudentHome(String userName) {
         this.userName = userName;
     }
+
 
     public void show(Stage stage) {
         //Main container
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(20));
 
+
         //Header with logo and title
         HBox header  = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(10,  20, 20, 20));
+
 
         //STEVE Image
         Image avatar = new Image(getClass().getResource("/images/STEVE.png").toExternalForm());
@@ -95,7 +101,12 @@ public class StudentHome {
     private Button createModuleButton(String moduleName) {
         Button button = new Button(moduleName);
         button.setPrefSize(300, 100);
-        button.setOnAction(e -> {System.out.println(moduleName + " selected!");});
+        button.setOnAction(e -> {
+            System.out.println(moduleName + " selected!");
+            Stage primaryStage = (Stage) button.getScene().getWindow();
+            ChatBot chatbotPage = new ChatBot(moduleName, userName);
+            chatbotPage.start(primaryStage);
+        });
         return button;
     }
 }

@@ -17,7 +17,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 
 
-public class QuizChat extends Application {
+public class ChatBot extends Application {
 
 
     @Override
@@ -117,7 +117,7 @@ public class QuizChat extends Application {
 
     // Placeholder for Back
     private void onBackClicked() {
-        // Ipplement the back button functionality here
+        // Implement the back button functionality here
     }
 
 

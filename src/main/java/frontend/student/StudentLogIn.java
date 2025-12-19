@@ -14,7 +14,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
 public class StudentLogIn extends Application {
-
+    private TextField SIDField;
     private PasswordField passwordField;
     private static Stage primaryStage;
 
@@ -73,7 +73,7 @@ public class StudentLogIn extends Application {
         LoginGuide.setWrapText(true);
         LoginGuide.setTextAlignment(TextAlignment.CENTER);
 
-        TextField SIDField = new TextField();
+        SIDField = new TextField();
         SIDField.setPromptText("Student ID");
         SIDField.setMaxWidth(200);
         SIDField.setPrefHeight(35);
@@ -124,6 +124,23 @@ public class StudentLogIn extends Application {
     }
 
     private void handleLogin() {
+        String username = SIDField.getText();
+        String password = passwordField.getText();
+
+
+        if (username.isEmpty() || password.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Login Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Please enter both username and password.");
+            alert.showAndWait();
+        }
+        else {
+            StudentHome homePageStudent = new StudentHome(username);
+            homePageStudent.show(getPrimaryStage());
+        }
+
+
     }
 
     public static void main(String[] args) {

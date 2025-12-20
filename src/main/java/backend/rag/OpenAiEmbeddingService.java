@@ -3,23 +3,26 @@ package backend.rag;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class OpenAiEmbeddingService implements EmbeddingService {
 
     @Value("${openai.api.key:}")
-    private String apiKey;
+    private String apiKeyFromProperty;
 
     @Value("${openai.embedding.model:text-embedding-3-small}")
     private String embeddingModel;
 
+    private String apiKey = null;
+    private boolean initialized = false;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
@@ -30,129 +33,194 @@ public class OpenAiEmbeddingService implements EmbeddingService {
         this.objectMapper = new ObjectMapper();
     }
 
+    // Initialize on first use (lazy initialization)
+    private void initializeIfNeeded() {
+        if (initialized) return;
+
+        System.out.println("\n🔑 Initializing OpenAI Embedding Service...");
+
+        // 1. Try application.properties
+        if (apiKeyFromProperty != null && !apiKeyFromProperty.trim().isEmpty()) {
+            apiKey = apiKeyFromProperty.trim();
+            System.out.println("   Using key from application.properties");
+        }
+
+        // 2. Try environment variable
+        if (apiKey == null || apiKey.isEmpty()) {
+            String envKey = System.getenv("OPENAI_API_KEY");
+            if (envKey != null && !envKey.trim().isEmpty()) {
+                apiKey = envKey.trim();
+                System.out.println("   Using key from environment variable");
+            }
+        }
+
+        // 3. Validate the key
+        if (apiKey == null || apiKey.isEmpty() || !isValidApiKey(apiKey)) {
+            System.out.println("⚠️ No valid API key found - using dummy embeddings");
+            System.out.println("   Set OPENAI_API_KEY environment variable or openai.api.key in application.properties");
+            apiKey = null; // Use dummy mode
+        } else {
+            String maskedKey = maskApiKey(apiKey);
+            System.out.println("✅ OpenAI API Key loaded: " + maskedKey);
+            System.out.println("   Model: " + embeddingModel);
+        }
+
+        initialized = true;
+        System.out.println("=== Initialization Complete ===\n");
+    }
+
+    private boolean isValidApiKey(String key) {
+        if (key == null || key.trim().isEmpty()) return false;
+        key = key.trim();
+
+        // Reject placeholder keys
+        if (key.contains("REPLACE") ||
+                key.contains("YOUR_KEY") ||
+                key.startsWith("sk-example") ||
+                key.equals("your-actual-key-here") ||
+                key.equals("sk-your-key-here")) {
+            return false;
+        }
+
+        // Accept real keys
+        return key.startsWith("sk-") && key.length() > 20;
+    }
+
+    private String maskApiKey(String key) {
+        if (key == null || key.length() < 12) return "***";
+        return key.substring(0, 8) + "..." + key.substring(key.length() - 4);
+    }
+
     @Override
     public float[] embed(String text) throws Exception {
-        // ========== SAFETY CHECK ==========
-        if (apiKey == null || apiKey.isEmpty() ||
-                apiKey.contains("REPLACE") ||
-                apiKey.contains("YOUR_KEY") ||
-                apiKey.startsWith("sk-example") ||
-                apiKey.equals("your-actual-key-here")) {
+        // Initialize on first use
+        initializeIfNeeded();
 
-            System.out.println("⚠️ WARNING: Using placeholder/dummy API key");
-            System.out.println("To use real OpenAI API:");
-            System.out.println("1. Get key from: https://platform.openai.com/api-keys");
-            System.out.println("2. Add to: src/main/resources/application.properties");
-            System.out.println("3. Add: openai.api.key=your-real-key-here");
+        System.out.println("\n🔧 Creating embedding for text (" + text.length() + " chars)");
 
-            // Return dummy embedding for testing
+        // Check if we have a real API key
+        if (apiKey == null) {
+            System.out.println("⚠️ No valid API key - using dummy embedding");
             return createDummyEmbedding(text);
         }
 
-        // ========== REAL OPENAI API CALL ==========
-        // Clean and prepare text
-        String cleanedText = cleanTextForEmbedding(text);
+        try {
+            // ========== REAL OPENAI API CALL ==========
+            // Clean and prepare text
+            String cleanedText = cleanTextForEmbedding(text);
 
-        // Prepare JSON request
-        String requestBody = String.format(
-                "{\"model\": \"%s\", \"input\": \"%s\"}",
-                embeddingModel,
-                cleanedText.replace("\"", "\\\"")
-        );
+            // Create JSON request
+            Map<String, Object> requestMap = new HashMap<>();
+            requestMap.put("model", embeddingModel);
+            requestMap.put("input", cleanedText);
+            requestMap.put("encoding_format", "float");
 
-        // Build HTTP request
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.openai.com/v1/embeddings"))
-                .header("Authorization", "Bearer " + apiKey)
-                .header("Content-Type", "application/json")
-                .header("User-Agent", "Java-RAG-App")
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                .timeout(Duration.ofSeconds(30))
-                .build();
+            String requestBody = objectMapper.writeValueAsString(requestMap);
 
-        // Send request
-        HttpResponse<String> response = httpClient.send(
-                request,
-                HttpResponse.BodyHandlers.ofString()
-        );
+            System.out.println("📤 Calling OpenAI API with model: " + embeddingModel);
 
-        // Check response
-        if (response.statusCode() == 401) {
-            throw new RuntimeException("Invalid OpenAI API key. Please check your key.");
-        } else if (response.statusCode() != 200) {
-            throw new RuntimeException(
-                    "OpenAI API error: " + response.statusCode() +
-                            " - " + response.body()
+            // Build HTTP request
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.openai.com/v1/embeddings"))
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .header("User-Agent", "AP-STEVE-RAG-App/1.0")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .timeout(Duration.ofSeconds(30))
+                    .build();
+
+            // Send request
+            HttpResponse<String> response = httpClient.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
             );
+
+            System.out.println("📥 OpenAI Response Status: " + response.statusCode());
+
+            // Check response
+            if (response.statusCode() == 401) {
+                System.err.println("❌ Invalid OpenAI API key (401 Unauthorized)");
+                throw new RuntimeException("Invalid OpenAI API key. Please check your key.");
+            } else if (response.statusCode() != 200) {
+                throw new RuntimeException(
+                        "OpenAI API error: " + response.statusCode() +
+                                " - " + response.body()
+                );
+            }
+
+            // Parse response
+            String responseBody = response.body();
+            Map<String, Object> responseMap = objectMapper.readValue(
+                    responseBody, Map.class);
+
+            List<Map<String, Object>> data = (List<Map<String, Object>>) responseMap.get("data");
+            if (data == null || data.isEmpty()) {
+                throw new RuntimeException("No embedding data in OpenAI response");
+            }
+
+            // Convert List<Double> to float[]
+            List<Double> embeddingList = (List<Double>) data.get(0).get("embedding");
+            if (embeddingList == null || embeddingList.isEmpty()) {
+                throw new RuntimeException("Empty embedding in response");
+            }
+
+            float[] embedding = new float[embeddingList.size()];
+            for (int i = 0; i < embeddingList.size(); i++) {
+                embedding[i] = embeddingList.get(i).floatValue();
+            }
+
+            System.out.println("✅ Created real OpenAI embedding with " + embedding.length + " dimensions");
+            return embedding;
+
+        } catch (Exception e) {
+            System.err.println("❌ OpenAI API call failed: " + e.getMessage());
+            System.err.println("⚠️ Falling back to dummy embedding");
+            return createDummyEmbedding(text);
         }
-
-        // Parse response
-        String responseBody = response.body();
-        OpenAiEmbeddingResponse embeddingResponse = objectMapper.readValue(
-                responseBody,
-                OpenAiEmbeddingResponse.class
-        );
-
-        // Convert List<Double> to float[]
-        List<Double> embeddingList = embeddingResponse.data.get(0).embedding;
-        float[] embedding = new float[embeddingList.size()];
-        for (int i = 0; i < embeddingList.size(); i++) {
-            embedding[i] = embeddingList.get(i).floatValue();
-        }
-
-        System.out.println("✓ Created real OpenAI embedding with " + embedding.length + " dimensions");
-        return embedding;
     }
 
     private float[] createDummyEmbedding(String text) {
-        System.out.println("Creating dummy embedding for text length: " + text.length());
+        System.out.println("🔄 Creating dummy embedding for testing");
 
-        // Create realistic-looking dummy embedding (same size as OpenAI's)
-        float[] embedding = new float[1536]; // text-embedding-3-small has 1536 dimensions
+        // Create realistic dummy embedding
+        int dimensions = embeddingModel.contains("large") ? 3072 : 1536;
+        float[] embedding = new float[dimensions];
+
+        int textHash = text != null ? Math.abs(text.hashCode()) : 0;
+
         for (int i = 0; i < embedding.length; i++) {
-            // More realistic distribution (centered around 0, range -1 to 1)
-            embedding[i] = (float) (Math.random() * 2 - 1);
+            embedding[i] = (float) Math.sin(textHash * (i + 1) * 0.01) * 0.5f;
         }
 
-        // Make first few values deterministic based on text length
-        if (text.length() > 0) {
-            embedding[0] = (text.length() % 100) / 100.0f;
-            embedding[1] = text.split(" ").length / 100.0f;
+        // Normalize
+        float sumSq = 0;
+        for (float v : embedding) {
+            sumSq += v * v;
+        }
+        float norm = (float) Math.sqrt(sumSq);
+        if (norm > 0) {
+            for (int i = 0; i < embedding.length; i++) {
+                embedding[i] /= norm;
+            }
         }
 
+        System.out.println("✅ Created dummy embedding with " + embedding.length + " dimensions");
         return embedding;
     }
 
     private String cleanTextForEmbedding(String text) {
-        if (text == null) return "";
+        if (text == null || text.trim().isEmpty()) {
+            return "empty";
+        }
 
-        // Remove excessive whitespace
         text = text.replaceAll("\\s+", " ").trim();
 
-        // Truncate if too long (OpenAI has limits)
-        int maxLength = 8000;
+        int maxLength = 6000;
         if (text.length() > maxLength) {
+            System.out.println("⚠️ Text truncated from " + text.length() + " to " + maxLength + " characters");
             text = text.substring(0, maxLength);
-            System.out.println("⚠️ Text truncated to " + maxLength + " characters");
         }
 
         return text;
-    }
-
-    @Override
-    public String getModelName() {
-        if (apiKey == null || apiKey.isEmpty() || apiKey.contains("REPLACE")) {
-            return "dummy-model-for-testing";
-        }
-        return embeddingModel;
-    }
-
-    // Simple DTO classes for JSON parsing
-    private static class OpenAiEmbeddingResponse {
-        public List<EmbeddingData> data;
-    }
-
-    private static class EmbeddingData {
-        public List<Double> embedding;
     }
 }

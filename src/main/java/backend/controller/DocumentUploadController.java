@@ -1,6 +1,7 @@
 package backend.controller;
 
 import backend.rag.DocumentLoader;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,7 +17,9 @@ public class DocumentUploadController {
 
     private final DocumentLoader documentLoader;
 
+    @Autowired
     public DocumentUploadController(DocumentLoader documentLoader) {
+
         this.documentLoader = documentLoader;
     }
 

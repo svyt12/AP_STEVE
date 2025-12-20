@@ -35,11 +35,6 @@ public class Application {
     }
 
     @Bean
-    public DocumentLoader documentLoader(VectorStore vectorStore, EmbeddingService embeddingService) {
-        return new DocumentLoader(vectorStore, embeddingService);
-    }
-
-    @Bean
     public RAGQueryService ragQueryService(VectorStore vectorStore, EmbeddingService embeddingService) {
         System.out.println("Creating RAGQueryService bean");
         return new RAGQueryService(vectorStore, embeddingService);

@@ -11,7 +11,6 @@ import java.time.Duration;
 
 public class FileUploadService {
 
-    // ✅ MATCH UploadDocument
     private static final String UPLOAD_URL =
             "http://localhost:8080/api/documents/upload";
 

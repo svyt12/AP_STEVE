@@ -1,13 +1,12 @@
 package frontend.student;
 
+import frontend.services.ChatService;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
@@ -20,31 +19,32 @@ public class ChatBot extends Application {
     private Stage primaryStage;
     private String moduleName;
     private String username;
+    private TextArea chatDisplay; // Add this to show responses
+    private ChatService chatService;
 
     public ChatBot() {
-        //empty constructor
+        this.chatService = new ChatService();
     }
 
-    //Constructor
-    public ChatBot(String moduleName, String username){
+    // Constructor
+    public ChatBot(String moduleName, String username) {
         this.moduleName = moduleName;
         this.username = username;
+        this.chatService = new ChatService();
     }
 
     @Override
     public void start(Stage stage) {
-
+        this.primaryStage = stage;
 
         // BACK button and topbar
         Button backButton = new Button("Back");
-        backButton.setOnAction(e -> onBackClicked(stage)); // Placeholder method for bskc
-
+        backButton.setOnAction(e -> onBackClicked(stage));
 
         // Module name label
-        Label moduleLabel = new Label(moduleName);
+        Label moduleLabel = new Label(moduleName != null ? moduleName : "General Chat");
         moduleLabel.setFont(Font.font(14));
         moduleLabel.setTextAlignment(TextAlignment.CENTER);
-
 
         BorderPane topBar = new BorderPane();
         topBar.setLeft(backButton);
@@ -53,105 +53,131 @@ public class ChatBot extends Application {
         topBar.setPadding(new Insets(10));
         topBar.setStyle("-fx-border-color: lightgray; -fx-border-width: 0 0 1 0;");
 
+        // Chat display area
+        chatDisplay = new TextArea();
+        chatDisplay.setEditable(false);
+        chatDisplay.setWrapText(true);
+        chatDisplay.setPrefHeight(300);
+        chatDisplay.setPromptText("Conversation will appear here...");
+        chatDisplay.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 12;");
 
-        // Chat history and search components
-        TextField searchField = new TextField();
-        searchField.setPromptText("Search for a chat...");
-        searchField.setMaxWidth(200);
-
-
-        Button searchButton = new Button("Search");
-        searchButton.setOnAction(e -> onSearchClicked(searchField.getText()));
-
-
-        // VBox for search bar and button, aligned to the top
-        VBox searchBoxContainer = new VBox(5);
-        searchBoxContainer.setAlignment(Pos.TOP_CENTER);
-        searchBoxContainer.getChildren().addAll(searchField, searchButton);
-
-
-        // Chat History
-        ListView<String> chatHistoryList = new ListView<>();
-        chatHistoryList.getItems().addAll("History 1", "History 2", "History 3");
-
-
-        // VBox for the Chat History section
-        VBox chatHistoryBox = new VBox(10);
-        chatHistoryBox.setPadding(new Insets(10));
-        Label historyLabel = new Label("Chat History");
-        historyLabel.setFont(Font.font(16));
-        chatHistoryBox.getChildren().addAll(historyLabel, chatHistoryList, searchBoxContainer);
-
-
-        // STEVE
+        // STEVE avatar
         Image avatarImage = new Image(getClass().getResource("/images/STEVE.png").toExternalForm());
         ImageView avatar = new ImageView(avatarImage);
         avatar.setFitWidth(150);
         avatar.setPreserveRatio(true);
 
-
         Label steveMessage = new Label("S.T.E.V.E: How may I assist you today?");
         steveMessage.setFont(Font.font(16));
         steveMessage.setTextAlignment(TextAlignment.CENTER);
 
-
+        // User input
         TextField userInputField = new TextField();
-        userInputField.setPromptText("Ask a question...");
-        userInputField.setMaxWidth(300);
+        userInputField.setPromptText("Ask a question or type 'quiz about [topic]'...");
+        userInputField.setMaxWidth(400);
 
+        // Ask button
+        Button askButton = new Button("Ask S.T.E.V.E");
+        askButton.setStyle("-fx-font-size: 14; -fx-padding: 8 20;");
+        askButton.setOnAction(e -> {
+            String question = userInputField.getText().trim();
+            if (!question.isEmpty()) {
+                onAskClicked(question);
+                userInputField.clear();
+            }
+        });
 
-        Button askButton = new Button("Ask");
-        askButton.setOnAction(e -> onAskClicked(userInputField.getText()));
+        // Clear button
+        Button clearButton = new Button("Clear Chat");
+        clearButton.setOnAction(e -> chatDisplay.clear());
 
+        // Input panel
+        VBox inputPanel = new VBox(10);
+        inputPanel.setAlignment(Pos.CENTER);
+        inputPanel.getChildren().addAll(userInputField, askButton, clearButton);
 
-        // VBox for STEVE "I AM STEVE"
+        // Main chat area
         VBox chatBox = new VBox(15);
-        chatBox.setPadding(new Insets(40));
+        chatBox.setPadding(new Insets(20));
         chatBox.setAlignment(Pos.CENTER);
-        chatBox.getChildren().addAll(avatar, steveMessage, userInputField, askButton);
+        chatBox.getChildren().addAll(avatar, steveMessage, chatDisplay, inputPanel);
 
-
-        // beetroot
+        // Root layout
         BorderPane root = new BorderPane();
         root.setTop(topBar);
-        root.setLeft(chatHistoryBox);
         root.setCenter(chatBox);
 
-
         // Scene
-        Scene scene = new Scene(root, 800, 600);
-        stage.setTitle("S.T.E.V.E Chat");
+        Scene scene = new Scene(root, 900, 700);
+        stage.setTitle("S.T.E.V.E Chat - " + moduleName);
         stage.setScene(scene);
         stage.show();
     }
 
-
-    // Placeholder for Back
     private void onBackClicked(Stage primaryStage) {
-        // Implement the back button functionality here
         StudentHome homePage = new StudentHome(username);
         homePage.show(primaryStage);
     }
 
-
-    // Placeholder for Search
-    private void onSearchClicked(String query) {
-        // Handle the search functionality here
-        System.out.println("Search query: " + query);
-    }
-
-
-    // Placeholder for Ask button action (counting or not counting quizes)
     private void onAskClicked(String question) {
-        // If the question contains quiz= quiz
-        if (question.toLowerCase().contains("quiz")) {
-            System.out.println("Quiz triggered: Generate quiz prototype.");
-            // quiz willy wonkay here
-        } else {
-            System.out.println("User question: " + question);
-        }
+        // Add user question to chat
+        appendToChat("👤 You: " + question);
+
+        // Show thinking indicator
+        appendToChat("🤔 S.T.E.V.E is thinking...\n");
+
+        // Process in background thread (keep UI responsive)
+        new Thread(() -> {
+            try {
+                ChatService.ChatResponse response = chatService.askQuestion(question);
+
+                Platform.runLater(() -> {
+                    // Clear "thinking" message
+                    String currentText = chatDisplay.getText();
+                    if (currentText.endsWith("🤔 S.T.E.V.E is thinking...\n")) {
+                        chatDisplay.setText(currentText.substring(0,
+                                currentText.length() - "🤔 S.T.E.V.E is thinking...\n".length()));
+                    }
+
+                    // Add response
+                    String answer = response.getAnswer();
+                    appendToChat("🤖 S.T.E.V.E: " + answer);
+
+                    // Check if it's a quiz
+                    if (question.toLowerCase().contains("quiz")) {
+                        appendToChat("\n🎯 Quiz Mode Activated!");
+                        appendToChat("   Topic: " + extractTopic(question));
+                        appendToChat("   [Quiz would be displayed here in a real implementation]\n");
+                    }
+                });
+
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    appendToChat("❌ Error: " + e.getMessage());
+                    System.err.println("Chat error: " + e.getMessage());
+                });
+            }
+        }).start();
     }
 
+    private void appendToChat(String text) {
+        Platform.runLater(() -> {
+            chatDisplay.appendText(text + "\n");
+            // Auto-scroll to bottom
+            chatDisplay.setScrollTop(Double.MAX_VALUE);
+        });
+    }
+
+    private String extractTopic(String question) {
+        // Extract topic from quiz question
+        String q = question.toLowerCase();
+        if (q.contains("about")) {
+            return q.substring(q.indexOf("about") + 5).trim();
+        } else if (q.contains("on")) {
+            return q.substring(q.indexOf("on") + 2).trim();
+        }
+        return "General Knowledge";
+    }
 
     public static void main(String[] args) {
         launch(args);

@@ -1,10 +1,10 @@
 package backend.controller;
 
+import backend.rag.SearchResult;
 import backend.service.RAGQueryService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -12,47 +12,93 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class ChatController {
 
-    private final RAGQueryService ragQueryService;
-
     @Autowired
-    public ChatController(RAGQueryService ragQueryService) {
-        this.ragQueryService = ragQueryService;
+    private RAGQueryService ragService;
+
+    @GetMapping("/health")
+    public String health() {
+        return "✅ Chat endpoint is healthy at " + new java.util.Date();
     }
 
     @PostMapping("/ask")
-    public ResponseEntity<Map<String, String>> askQuestion(@RequestBody Map<String, String> request) {
-        try {
-            String question = request.get("question");
+    public Map<String, Object> askQuestion(@RequestBody Map<String, String> request) {
+        String question = request.get("question");
+        System.out.println("\n💭 Question received: " + question);
 
-            if (question == null || question.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(
-                        Map.of("error", "Question cannot be empty"));
+        try {
+            // Check if it's a quiz request
+            if (question.toLowerCase().contains("quiz")) {
+                System.out.println("🎯 Detected quiz request");
+                return generateQuiz(question);
             }
 
-            // Process question through RAG
-            String answer = ragQueryService.queryDocuments(question);
+            // Regular RAG query
+            List<SearchResult> relevantDocs = ragService.searchDocuments(question);
+            String answer = ragService.generateAnswer(question, relevantDocs);
 
-            // Return response
-            Map<String, String> response = new HashMap<>();
-            response.put("question", question);
-            response.put("answer", answer);
-            response.put("timestamp", String.valueOf(System.currentTimeMillis()));
+            System.out.println("✅ Generated answer with " + relevantDocs.size() + " relevant documents");
 
-            return ResponseEntity.ok(response);
+            return Map.of(
+                    "answer", answer,
+                    "relevantDocuments", relevantDocs,
+                    "questionType", "RAG_QUERY",
+                    "timestamp", new java.util.Date().toString()
+            );
 
         } catch (Exception e) {
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to process question: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(errorResponse);
+            System.err.println("❌ Error processing question: " + e.getMessage());
+            e.printStackTrace();
+            return Map.of(
+                    "answer", "Sorry, I encountered an error: " + e.getMessage(),
+                    "error", true,
+                    "questionType", "ERROR"
+            );
         }
     }
 
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> healthCheck() {
-        Map<String, String> response = new HashMap<>();
-        response.put("status", "UP");
-        response.put("service", "S.T.E.V.E RAG Chat");
-        response.put("timestamp", String.valueOf(System.currentTimeMillis()));
-        return ResponseEntity.ok(response);
+    private Map<String, Object> generateQuiz(String question) {
+        // Extract topic from question
+        String topic = extractTopicFromQuestion(question);
+
+        System.out.println("📝 Generating quiz for topic: " + topic);
+
+        // In a real implementation, you would:
+        // 1. Search for documents about the topic
+        // 2. Generate quiz questions based on content
+        // 3. Return the quiz
+
+        return Map.of(
+                "answer", "🎯 I'll generate a quiz about: " + topic +
+                        "\n\n📚 Quiz Content: [Would be generated from your documents]" +
+                        "\n\n1. What is " + topic + "?" +
+                        "\n   A) Option A" +
+                        "\n   B) Option B" +
+                        "\n   C) Option C" +
+                        "\n   D) Option D" +
+                        "\n\n2. Explain the main concept of " + topic +
+                        "\n\n[This is a placeholder - real quiz would come from your documents]",
+                "questionType", "QUIZ",
+                "quizTopic", topic,
+                "isQuiz", true,
+                "timestamp", new java.util.Date().toString()
+        );
+    }
+
+    private String extractTopicFromQuestion(String question) {
+        // Simple topic extraction - remove "quiz" and common words
+        String cleaned = question.toLowerCase()
+                .replace("quiz", "")
+                .replace("generate", "")
+                .replace("create", "")
+                .replace("make", "")
+                .replace("about", "")
+                .replace("on", "")
+                .trim();
+
+        // Capitalize first letter
+        if (!cleaned.isEmpty()) {
+            return cleaned.substring(0, 1).toUpperCase() + cleaned.substring(1);
+        }
+        return "the uploaded documents";
     }
 }

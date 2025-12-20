@@ -1,52 +1,60 @@
 package frontend.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ChatService {
-    private static final String CHAT_URL = "http://localhost:8080/api/chat/ask";
-    private final HttpClient client;
-    private final ObjectMapper objectMapper;
-    private final ChatService chatService;
 
-    public ChatService() {
-        this.client = HttpClient.newHttpClient();
-        this.objectMapper = new ObjectMapper();
-        this.chatService = new ChatService();
+    private static final String CHAT_URL = "http://localhost:8080/api/chat/ask";
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public ChatResponse askQuestion(String question) {
+        try {
+            System.out.println("💬 Sending question to backend: " + question);
+
+            // Prepare request
+            Map<String, String> request = new HashMap<>();
+            request.put("question", question);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, String>> entity = new HttpEntity<>(request, headers);
+
+            // Send request
+            ResponseEntity<ChatResponse> response = restTemplate.exchange(
+                    CHAT_URL,
+                    HttpMethod.POST,
+                    entity,
+                    ChatResponse.class
+            );
+
+            System.out.println("✅ Received response from backend");
+            return response.getBody();
+
+        } catch (Exception e) {
+            System.err.println("❌ Chat request failed: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to get answer: " + e.getMessage(), e);
+        }
     }
 
-    public String askQuestion(String question) throws Exception {
-        // Create request body
-        Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("question", question);
+    // Response DTO class
+    public static class ChatResponse {
+        private String answer;
+        private Object relevantDocuments; // Will contain SearchResult objects
 
-        String jsonBody = objectMapper.writeValueAsString(requestBody);
+        // Getters and setters
+        public String getAnswer() { return answer; }
+        public void setAnswer(String answer) { this.answer = answer; }
 
-        // Create request
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(CHAT_URL))
-                .header("Content-Type", "application/json")
-                .header("Accept", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                .build();
-
-        // Send request
-        HttpResponse<String> response = client.send(request,
-                HttpResponse.BodyHandlers.ofString());
-
-        if (response.statusCode() >= 200 && response.statusCode() < 300) {
-            // Parse response
-            Map<String, String> responseMap = objectMapper.readValue(
-                    response.body(), Map.class);
-            return responseMap.get("answer");
-        } else {
-            throw new RuntimeException("Chat failed: " + response.statusCode()
-                    + " - " + response.body());
+        public Object getRelevantDocuments() { return relevantDocuments; }
+        public void setRelevantDocuments(Object relevantDocuments) {
+            this.relevantDocuments = relevantDocuments;
         }
     }
 }

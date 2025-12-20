@@ -56,7 +56,7 @@ public class RAGQueryService {
             // add OpenAI chat API integration here
             String answer = buildAnswerFromContext(context.toString(), question);
 
-            System.out.println("✅ Query completed successfully");
+            System.out.println("✅ 3Query completed successfully");
             return answer;
 
         } catch (Exception e) {

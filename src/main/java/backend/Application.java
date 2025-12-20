@@ -41,7 +41,7 @@ public class Application {
 
     @Bean
     public RAGQueryService ragQueryService(VectorStore vectorStore, EmbeddingService embeddingService) {
-        System.out.println("✅ Creating RAGQueryService bean");
+        System.out.println("Creating RAGQueryService bean");
         return new RAGQueryService(vectorStore, embeddingService);
     }
 }

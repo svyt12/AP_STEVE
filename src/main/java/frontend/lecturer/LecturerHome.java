@@ -103,7 +103,7 @@ public class LecturerHome {
         button.setOnAction(e -> {System.out.println(moduleName + " selected!");
             UploadDocument uploadPage = new UploadDocument(moduleName);
             Stage currentStage = (Stage) button.getScene().getWindow();
-            uploadPage.start(currentStage);});
+            uploadPage.show(currentStage);});
         return button;
     }
 }

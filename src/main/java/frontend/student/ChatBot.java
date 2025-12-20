@@ -1,6 +1,5 @@
-package frontend;
+package frontend.student;
 
-import frontend.student.StudentHome;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

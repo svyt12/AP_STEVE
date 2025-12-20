@@ -1,6 +1,6 @@
 package frontend.student;
 
-import frontend.ChatBot;
+import frontend.student.ChatBot;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.geometry.Pos;

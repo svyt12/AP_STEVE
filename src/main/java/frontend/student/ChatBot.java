@@ -19,7 +19,8 @@ public class ChatBot extends Application {
     private Stage primaryStage;
     private String moduleName;
     private String username;
-    private TextArea chatDisplay; // Add this to show responses
+    private TextArea chatDisplay;
+    private ListView<String> chatHistoryList;
     private ChatService chatService;
 
     public ChatBot() {
@@ -53,6 +54,47 @@ public class ChatBot extends Application {
         topBar.setPadding(new Insets(10));
         topBar.setStyle("-fx-border-color: lightgray; -fx-border-width: 0 0 1 0;");
 
+        // CHAT HISTORY SECTION
+
+        // Search
+        TextField searchField = new TextField();
+        searchField.setPromptText("Search for a chat...");
+        searchField.setMaxWidth(200);
+
+        Button searchButton = new Button("Search");
+        searchButton.setOnAction(e -> onSearchClicked(searchField.getText()));
+
+        // VBox for search bar and button
+        VBox searchBoxContainer = new VBox(5);
+        searchBoxContainer.setAlignment(Pos.TOP_CENTER);
+        searchBoxContainer.getChildren().addAll(searchField, searchButton);
+
+        // Chat History List
+        chatHistoryList = new ListView<>();
+        // Initialize with some sample history
+        chatHistoryList.getItems().addAll(
+                "RAG Discussion - Dec 20"
+        );
+
+        // Set selection handler
+        chatHistoryList.getSelectionModel().selectedItemProperty().addListener(
+                (observable, oldValue, newValue) -> {
+                    if (newValue != null) {
+                        onChatHistorySelected(newValue);
+                    }
+                }
+        );
+
+        VBox chatHistoryBox = new VBox(10);
+        chatHistoryBox.setPadding(new Insets(10));
+        Label historyLabel = new Label("Chat History");
+        historyLabel.setFont(Font.font(16));
+        chatHistoryBox.getChildren().addAll(historyLabel, chatHistoryList, searchBoxContainer);
+
+        chatHistoryBox.setPrefWidth(250);
+
+        // MAIN CHAT SECTION
+
         // Chat display area
         chatDisplay = new TextArea();
         chatDisplay.setEditable(false);
@@ -61,7 +103,6 @@ public class ChatBot extends Application {
         chatDisplay.setPromptText("Conversation will appear here...");
         chatDisplay.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 12;");
 
-        // STEVE avatar
         Image avatarImage = new Image(getClass().getResource("/images/STEVE.png").toExternalForm());
         ImageView avatar = new ImageView(avatarImage);
         avatar.setFitWidth(150);
@@ -71,7 +112,6 @@ public class ChatBot extends Application {
         steveMessage.setFont(Font.font(16));
         steveMessage.setTextAlignment(TextAlignment.CENTER);
 
-        // User input
         TextField userInputField = new TextField();
         userInputField.setPromptText("Ask a question or type 'quiz about [topic]'...");
         userInputField.setMaxWidth(400);
@@ -91,24 +131,21 @@ public class ChatBot extends Application {
         Button clearButton = new Button("Clear Chat");
         clearButton.setOnAction(e -> chatDisplay.clear());
 
-        // Input panel
         VBox inputPanel = new VBox(10);
         inputPanel.setAlignment(Pos.CENTER);
         inputPanel.getChildren().addAll(userInputField, askButton, clearButton);
 
-        // Main chat area
         VBox chatBox = new VBox(15);
         chatBox.setPadding(new Insets(20));
         chatBox.setAlignment(Pos.CENTER);
         chatBox.getChildren().addAll(avatar, steveMessage, chatDisplay, inputPanel);
 
-        // Root layout
         BorderPane root = new BorderPane();
         root.setTop(topBar);
+        root.setLeft(chatHistoryBox);
         root.setCenter(chatBox);
 
-        // Scene
-        Scene scene = new Scene(root, 900, 700);
+        Scene scene = new Scene(root, 1000, 700);
         stage.setTitle("S.T.E.V.E Chat - " + moduleName);
         stage.setScene(scene);
         stage.show();
@@ -119,12 +156,48 @@ public class ChatBot extends Application {
         homePage.show(primaryStage);
     }
 
+    private void onSearchClicked(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return;
+        }
+
+        String searchTerm = query.trim().toLowerCase();
+        chatHistoryList.getItems().clear();
+
+
+        java.util.List<String> allHistory = java.util.Arrays.asList(
+
+        );
+
+        for (String history : allHistory) {
+            if (history.toLowerCase().contains(searchTerm)) {
+                chatHistoryList.getItems().add(history);
+            }
+        }
+
+        if (chatHistoryList.getItems().isEmpty()) {
+            chatHistoryList.getItems().add("No results found for: " + query);
+        }
+    }
+
+    private void onChatHistorySelected(String selectedHistory) {
+        // Simulate loading chat history
+        appendToChat("\nLoading chat: " + selectedHistory + "\n");
+
+    }
+
     private void onAskClicked(String question) {
         // Add user question to chat
-        appendToChat("👤 You: " + question);
+        appendToChat("Question: " + question);
 
-        // Show thinking indicator
-        appendToChat("🤔 S.T.E.V.E is thinking...\n");
+        // Add to chat history if it's a new conversation starter
+        if (!chatHistoryList.getItems().contains("New Chat - " +
+                java.time.LocalDate.now().toString())) {
+            chatHistoryList.getItems().add(0, "New Chat - " +
+                    java.time.LocalDate.now().toString());
+        }
+
+        appendToChat("S.T.E.V.E is thinking...\n");
 
         // Process in background thread (keep UI responsive)
         new Thread(() -> {
@@ -134,18 +207,16 @@ public class ChatBot extends Application {
                 Platform.runLater(() -> {
                     // Clear "thinking" message
                     String currentText = chatDisplay.getText();
-                    if (currentText.endsWith("🤔 S.T.E.V.E is thinking...\n")) {
+                    if (currentText.endsWith("S.T.E.V.E is thinking...\n")) {
                         chatDisplay.setText(currentText.substring(0,
-                                currentText.length() - "🤔 S.T.E.V.E is thinking...\n".length()));
+                                currentText.length() - "S.T.E.V.E is thinking...\n".length()));
                     }
 
-                    // Add response
                     String answer = response.getAnswer();
-                    appendToChat("🤖 S.T.E.V.E: " + answer);
+                    appendToChat("S.T.E.V.E: " + answer);
 
-                    // Check if it's a quiz
                     if (question.toLowerCase().contains("quiz")) {
-                        appendToChat("\n🎯 Quiz Mode Activated!");
+                        appendToChat("\nQuiz Mode Activated!");
                         appendToChat("   Topic: " + extractTopic(question));
                         appendToChat("   [Quiz would be displayed here in a real implementation]\n");
                     }

@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import jakarta.annotation.PostConstruct;
 
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
 @EnableConfigurationProperties({
@@ -23,6 +24,12 @@ public class Application {
         System.out.println("  POST /api/documents/upload - Upload PDF documents");
         System.out.println("  POST /api/chat/ask - Ask questions about documents");
         System.out.println("  GET  /api/chat/health - Health check");
+    }
+
+    @PostConstruct
+    public void init() {
+        System.out.println("🚀 S.T.E.V.E RAG Backend initialized with persistence");
+        System.out.println("📁 Data will be saved in: ./data/");
     }
 
     @Bean

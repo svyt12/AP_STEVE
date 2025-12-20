@@ -43,7 +43,7 @@ public class DocumentLoader {
                 System.out.println("   [" + (i+1) + "/" + chunks.size() + "] Creating embedding...");
                 float[] embedding = embeddingService.embed(chunkText);
 
-                vectorStore.store(chunkId, chunkText, embedding);
+                vectorStore.addVector(chunkId, chunkText, embedding);
                 System.out.println("   ✓ Stored chunk " + (i+1));
             }
 

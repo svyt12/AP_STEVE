@@ -44,7 +44,7 @@ public class DocumentProcessingService {
                 float[] embedding = embeddingService.embed(chunkText);
 
                 // 5. Store in vector database
-                vectorStore.store(chunkId, chunkText, embedding);
+                vectorStore.addVector(chunkId, chunkText, embedding);
 
                 System.out.println("   ✓ Stored chunk " + i);
             }

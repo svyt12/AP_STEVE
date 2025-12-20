@@ -4,11 +4,15 @@ import java.util.List;
 import java.util.Map;
 
 public interface VectorStore {
-    void store(String id, String content, float[] embedding);
-
+    void addVector(String documentId, String content, float[] embedding);
     List<SearchResult> searchSimilar(float[] queryEmbedding, int topK);
-    Map<String, String> getContents();
-    Map<String, float[]> getVectors();
-    void clear();
 
+    // persistence methods
+    void saveToFile(String filePath);
+    void loadFromFile(String filePath);
+
+    int getVectorCount();
+    Map<String, String> getVectors();
+
+    void clear();
 }

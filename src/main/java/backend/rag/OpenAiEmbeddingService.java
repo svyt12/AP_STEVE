@@ -135,11 +135,11 @@ public class OpenAiEmbeddingService implements EmbeddingService {
                     HttpResponse.BodyHandlers.ofString()
             );
 
-            System.out.println("📥 OpenAI Response Status: " + response.statusCode());
+            System.out.println("OpenAI Response Status: " + response.statusCode());
 
             // Check response
             if (response.statusCode() == 401) {
-                System.err.println("❌ Invalid OpenAI API key (401 Unauthorized)");
+                System.err.println("Invalid OpenAI API key (401 Unauthorized)");
                 throw new RuntimeException("Invalid OpenAI API key. Please check your key.");
             } else if (response.statusCode() != 200) {
                 throw new RuntimeException(
@@ -169,12 +169,12 @@ public class OpenAiEmbeddingService implements EmbeddingService {
                 embedding[i] = embeddingList.get(i).floatValue();
             }
 
-            System.out.println("✅ Created real OpenAI embedding with " + embedding.length + " dimensions");
+            System.out.println("Created real OpenAI embedding with " + embedding.length + " dimensions");
             return embedding;
 
         } catch (Exception e) {
-            System.err.println("❌ OpenAI API call failed: " + e.getMessage());
-            System.err.println("⚠️ Falling back to dummy embedding");
+            System.err.println("OpenAI API call failed: " + e.getMessage());
+            System.err.println("⚠Falling back to dummy embedding");
             return createDummyEmbedding(text);
         }
     }
@@ -217,7 +217,7 @@ public class OpenAiEmbeddingService implements EmbeddingService {
 
         int maxLength = 6000;
         if (text.length() > maxLength) {
-            System.out.println("⚠️ Text truncated from " + text.length() + " to " + maxLength + " characters");
+            System.out.println("⚠Text truncated from " + text.length() + " to " + maxLength + " characters");
             text = text.substring(0, maxLength);
         }
 

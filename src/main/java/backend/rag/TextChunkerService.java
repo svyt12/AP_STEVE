@@ -17,7 +17,7 @@ public class TextChunkerService {
             if (currentChunk.length() + sentence.length() > chunkSize) {
                 if (currentChunk.length() > 0) {
                     chunks.add(currentChunk.toString().trim());
-                    // Keep last few sentences for overlap
+
                     String[] chunkSentences = currentChunk.toString().split("(?<=[.!?])\\s+");
                     int keep = Math.min(2, chunkSentences.length); // Keep last 2 sentences
                     currentChunk = new StringBuilder();

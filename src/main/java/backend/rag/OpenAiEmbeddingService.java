@@ -18,7 +18,7 @@ public class OpenAiEmbeddingService implements EmbeddingService {
     @Value("${openai.api.key:}")
     private String apiKeyFromProperty;
 
-    @Value("${openai.embedding.model:text-embedding-3-small}")
+    @Value("${openai.embedding.model:text-embedding-3-small}")  // semantic matching
     private String embeddingModel;
 
     private String apiKey = null;

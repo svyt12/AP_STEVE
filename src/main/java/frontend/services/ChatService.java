@@ -5,7 +5,7 @@ import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.Map;
-
+// sends the request
 public class ChatService {
 
     private static final String CHAT_URL = "http://localhost:8080/api/chat/ask";

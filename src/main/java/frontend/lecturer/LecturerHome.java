@@ -11,13 +11,11 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import org.example.ap_steve.frontend.lecturer.LecturerLogin;
 
 public class LecturerHome {
 
 
     private String userName;
-    private Stage primaryStage;
 
 
     public LecturerHome(String userName) {
@@ -26,7 +24,6 @@ public class LecturerHome {
 
 
     public void show(Stage stage) {
-        this.primaryStage = stage;
         //Main container
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(20));
@@ -62,14 +59,6 @@ public class LecturerHome {
         WelBox.getChildren().addAll(welcomeLabel, messageLabel);
         header.getChildren().add(WelBox);
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        header.getChildren().add(spacer);
-
-        //Logout Button
-        Button logoutButton = new Button("Logout");
-        logoutButton.setOnAction(event -> onLogoutClicked());
-        header.getChildren().add(logoutButton);
 
         root.setTop(header);
 
@@ -117,24 +106,4 @@ public class LecturerHome {
             uploadPage.show(currentStage);});
         return button;
     }
-
-    private void onLogoutClicked() {
-        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmation.setTitle("Logout Confirmation");
-        confirmation.setHeaderText("Are you sure you want to logout?");
-
-
-        confirmation.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                try {
-                    LecturerLogin loginPage = new LecturerLogin();
-                    loginPage.start(primaryStage);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    primaryStage.close();
-                    LecturerLogin.main(new String[0]);
-                }
-            }
-        });
-    }
-    }
+}

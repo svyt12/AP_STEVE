@@ -24,7 +24,6 @@ public class StudentLogIn extends Application {
         showLoginScreen();
     }
 
-    //Getter
     public static Stage getPrimaryStage() {
         return primaryStage;
     }

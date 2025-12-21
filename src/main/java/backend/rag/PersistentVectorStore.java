@@ -13,15 +13,16 @@ public class PersistentVectorStore implements VectorStore {
     private final ObjectMapper mapper = new ObjectMapper();
     private final Path storageFile;
 
-    public PersistentVectorStore(String storagePath) {
-        this.storageFile = Path.of(storagePath, "vectors.json");
-        loadFromDisk();
+    public PersistentVectorStore(String basePath) {
+        this.storageFile = Path.of(basePath, "vectors.json");
+        loadFromFile(storageFile.toString());
     }
 
+
     @Override
-    public void addVector(String id, String content, float[] embedding) {
-        vectors.put(id, new VectorEntry(id, content, embedding));
-        saveToDisk();
+    public void addVector(String documentId, String content, float[] embedding) {
+        vectors.put(documentId, new VectorEntry(documentId, content, embedding));
+        saveToFile(storageFile.toString());
     }
 
     @Override
@@ -33,13 +34,8 @@ public class PersistentVectorStore implements VectorStore {
             results.add(new SearchResult(entry.id, entry.content, similarity));
         }
 
-        results.sort((a, b) -> Float.compare(b.similarity, a.similarity));
+        results.sort((a, b) -> Float.compare(b.getSimilarity(), a.getSimilarity()));
         return results.stream().limit(topK).toList();
-    }
-
-    @Override
-    public List<String> getContents() {
-        return vectors.keySet().stream().toList();
     }
 
     @Override
@@ -47,22 +43,38 @@ public class PersistentVectorStore implements VectorStore {
         return vectors.size();
     }
 
-    private void saveToDisk() {
+    @Override
+    public Map<String, String> getVectors() {
+        Map<String, String> contents = new HashMap<>();
+        for (VectorEntry entry : vectors.values()) {
+            contents.put(entry.id, entry.content);
+        }
+        return contents;
+    }
+
+    // persistence
+
+    @Override
+    public void saveToFile(String filePath) {
         try {
-            Files.createDirectories(storageFile.getParent());
-            mapper.writeValue(storageFile.toFile(), vectors);
+            Files.createDirectories(Path.of(filePath).getParent());
+            mapper.writeValue(new File(filePath), vectors);
         } catch (Exception e) {
             System.err.println("❌ Failed to save vectors: " + e.getMessage());
         }
     }
 
-    private void loadFromDisk() {
+    @Override
+    public void loadFromFile(String filePath) {
         try {
-            if (Files.exists(storageFile)) {
+            File file = new File(filePath);
+            if (file.exists()) {
                 Map<String, VectorEntry> loaded =
-                        mapper.readValue(storageFile.toFile(), mapper.getTypeFactory()
-                                .constructMapType(HashMap.class, String.class, VectorEntry.class));
+                        mapper.readValue(file,
+                                mapper.getTypeFactory().constructMapType(
+                                        HashMap.class, String.class, VectorEntry.class));
 
+                vectors.clear();
                 vectors.putAll(loaded);
                 System.out.println("📦 Loaded " + vectors.size() + " vectors from disk");
             }
@@ -70,6 +82,14 @@ public class PersistentVectorStore implements VectorStore {
             System.err.println("❌ Failed to load vectors: " + e.getMessage());
         }
     }
+
+    @Override
+    public void clear() {
+        vectors.clear();
+        saveToFile(storageFile.toString());
+        System.out.println("🧹 Vector store cleared");
+    }
+
 
     private float cosineSimilarity(float[] a, float[] b) {
         float dot = 0, normA = 0, normB = 0;
@@ -80,6 +100,7 @@ public class PersistentVectorStore implements VectorStore {
         }
         return (float) (dot / (Math.sqrt(normA) * Math.sqrt(normB) + 1e-10));
     }
+
 
     static class VectorEntry {
         public String id;
@@ -94,4 +115,3 @@ public class PersistentVectorStore implements VectorStore {
         }
     }
 }
-

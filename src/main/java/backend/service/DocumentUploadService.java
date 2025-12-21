@@ -1,65 +1,80 @@
 package backend.service;
 
-import backend.rag.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import backend.rag.EmbeddingService;
+import backend.rag.VectorStore;
+import backend.rag.TextChunkerService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import java.util.*;
+
+import java.util.List;
 
 @Service
 public class DocumentUploadService {
 
-    @Autowired
-    private OpenAiEmbeddingService embeddingService;
+    private final EmbeddingService embeddingService;
+    private final VectorStore vectorStore;
+    private final DocumentStorageService documentStorageService;
+    private final PdfTextExtractor pdfTextExtractor;
+    private final TextChunkerService textChunkerService;
 
-    @Autowired
-    private InMemoryVectorStore vectorStore;
-
-    @Autowired
-    private DocumentStorageService documentStorageService;
+    public DocumentUploadService(
+            EmbeddingService embeddingService,
+            VectorStore vectorStore,
+            DocumentStorageService documentStorageService,
+            PdfTextExtractor pdfTextExtractor,
+            TextChunkerService textChunkerService
+    ) {
+        this.embeddingService = embeddingService;
+        this.vectorStore = vectorStore;
+        this.documentStorageService = documentStorageService;
+        this.pdfTextExtractor = pdfTextExtractor;
+        this.textChunkerService = textChunkerService;
+    }
 
     public UploadResult processUpload(MultipartFile file, String documentId) throws Exception {
         UploadResult result = new UploadResult();
 
-        try {
-            System.out.println("📄 Processing upload: " + file.getOriginalFilename());
+        System.out.println("📄 Processing upload: " + file.getOriginalFilename());
 
-            String savedPath = documentStorageService.saveDocument(file, documentId);
-            result.setFilePath(savedPath);
+        // Save PDF
+        String savedPath = documentStorageService.saveDocument(file, documentId);
+        result.setFilePath(savedPath);
 
-            String placeholderText = "Document: " + file.getOriginalFilename() +
-                    "\nUploaded at: " + new Date() +
-                    "\nSize: " + file.getSize() + " bytes";
+        // Extract text
+        String text = pdfTextExtractor.extractText(file);
 
-            float[] embedding = embeddingService.embed(placeholderText);
-            vectorStore.addVector(documentId, placeholderText, embedding);
+        // Chunk text
+        List<String> chunks = textChunkerService.chunkText(text, 500, 100);
 
-            result.setSuccess(true);
-            result.setMessage("Document uploaded successfully");
-            result.setProcessedChunks(1);
-            result.setTotalChunks(1);
-
-            System.out.println("✅ Upload completed: " + result.getMessage());
-
-        } catch (Exception e) {
-            System.err.println("❌ Upload processing failed: " + e.getMessage());
-            result.setSuccess(false);
-            result.setMessage("Upload processing failed: " + e.getMessage());
-            throw e;
+        int chunkCount = 0;
+        for (String chunk : chunks) {
+            String chunkId = documentId + "_chunk_" + chunkCount++;
+            float[] embedding = embeddingService.embed(chunk);
+            vectorStore.addVector(chunkId, chunk, embedding);
         }
+
+        result.setSuccess(true);
+        result.setMessage("Document uploaded successfully");
+        result.setProcessedChunks(chunkCount);
+        result.setTotalChunks(chunkCount);
+
+        System.out.println("🧩 Embedded " + chunkCount + " chunks");
 
         return result;
     }
 
+    // ================= STATS METHODS =================
+
     public int getTotalDocuments() {
-        return documentStorageService.getAllStoredDocuments().size();
+        return documentStorageService.getStoredDocumentCount();
     }
 
     public int getTotalVectors() {
         return vectorStore.getVectorCount();
     }
 
-    // DTO for upload results
+    // ================= DTO =================
+
     public static class UploadResult {
         private boolean success;
         private String message;
@@ -67,7 +82,6 @@ public class DocumentUploadService {
         private int processedChunks;
         private int totalChunks;
 
-        // Getters and setters
         public boolean isSuccess() { return success; }
         public void setSuccess(boolean success) { this.success = success; }
 

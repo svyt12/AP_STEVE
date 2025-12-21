@@ -8,14 +8,15 @@ import java.util.List;
 @Service
 public class RAGQueryService {
 
-    private OpenAiEmbeddingService embeddingService;
+    private final EmbeddingService embeddingService;
 
-    private InMemoryVectorStore vectorStore;
+    private final VectorStore vectorStore;
 
     public RAGQueryService(VectorStore vectorStore, EmbeddingService embeddingService) {
-        this.vectorStore = (InMemoryVectorStore) vectorStore;
-        this.embeddingService = (OpenAiEmbeddingService) embeddingService;
+        this.vectorStore = vectorStore;
+        this.embeddingService = embeddingService;
     }
+
 
     public List<SearchResult> searchDocuments(String query) {
         try {
@@ -25,7 +26,7 @@ public class RAGQueryService {
             float[] queryEmbedding = embeddingService.embed(query);
 
             // Search vector store
-            List<SearchResult> results = vectorStore.searchSimilar(queryEmbedding, 10);
+            List<SearchResult> results = new java.util.ArrayList<>(vectorStore.searchSimilar(queryEmbedding, 10));
 
             System.out.println("   Found " + results.size() + " potential matches");
 

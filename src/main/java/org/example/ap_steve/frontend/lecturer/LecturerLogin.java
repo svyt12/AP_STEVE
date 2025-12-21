@@ -1,6 +1,5 @@
-package frontend.student;
+package org.example.ap_steve.frontend.lecturer;
 
-import frontend.lecturer.LecturerLogIn;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -8,15 +7,19 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
-import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
+import javafx.scene.control.Alert;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import org.example.ap_steve.frontend.student.StudentLogin;
 
-public class StudentLogIn extends Application {
+public class LecturerLogin extends Application {
+
+
     private TextField SIDField;
     private PasswordField passwordField;
     private static Stage primaryStage;
+
 
     @Override
     public void start(Stage stage) {
@@ -24,105 +27,128 @@ public class StudentLogIn extends Application {
         showLoginScreen();
     }
 
+
     //Getter
     public static Stage getPrimaryStage() {
         return primaryStage;
     }
 
+
     private void showLoginScreen() {
 
+
+        //Main Container
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
+
 
         HBox topBar = new HBox(20);
         topBar.setPadding(new Insets(10));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
+
+        //Taylor's UNI Image
         Image Taylors = new Image(getClass().getResource("/images/TaylorUniLogo.png").toExternalForm());
         ImageView TaylorsLogo = new ImageView(Taylors);
-        TaylorsLogo.setFitWidth(200);
+        TaylorsLogo.setFitWidth(300);
         TaylorsLogo.setPreserveRatio(true);
+        topBar.getChildren().add(TaylorsLogo);
+
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
+        topBar.getChildren().add(spacer);
 
+
+        //MyTIMeS Image
         Image myTimes = new Image(getClass().getResource("/images/MyTIMES.png").toExternalForm());
         ImageView myTimesLogo = new ImageView(myTimes);
-        myTimesLogo.setFitWidth(200);
+        myTimesLogo.setFitWidth(300);
         myTimesLogo.setPreserveRatio(true);
+        topBar.getChildren().add(myTimesLogo);
 
-        topBar.getChildren().addAll(TaylorsLogo, spacer, myTimesLogo);
+
         root.setTop(topBar);
 
-        // ===== CENTER CONTENT =====
+
+        //Login Stuff
         VBox loginContent = new VBox(15);
         loginContent.setAlignment(Pos.CENTER);
-        loginContent.setPadding(new Insets(30, 40, 30, 40));
+        loginContent.setPadding(new Insets(40));
         loginContent.setMaxWidth(400);
 
+
+        //STEVE Image
         Image avatar = new Image(getClass().getResource("/images/STEVE.png").toExternalForm());
         ImageView ImgSteve = new ImageView(avatar);
-        ImgSteve.setFitWidth(150);
+        ImgSteve.setFitWidth(200);
         ImgSteve.setPreserveRatio(true);
+        loginContent.getChildren().add(ImgSteve);
 
-        Label Greeting = new Label("Hello!");
-        Greeting.setFont(Font.font(14));
-        Greeting.setTextAlignment(TextAlignment.CENTER);
 
-        Label LoginGuide = new Label("Please login with your MyTIMeS Account.");
-        LoginGuide.setFont(Font.font(14));
-        LoginGuide.setWrapText(true);
-        LoginGuide.setTextAlignment(TextAlignment.CENTER);
+        //Labeling
+        Label Greeting = new Label("Hello Lecturer!");
+        Greeting.setFont(Font.font(16));
+        Greeting.setPadding(new Insets(0,0,10,0));
+        Label LoginGuide = new Label("Please login with your MyTIMeS Account. ");
+        LoginGuide.setFont(Font.font(16));
+        LoginGuide.setPadding(new Insets(0,0,20,0));
 
+
+        //StudentID Box
         SIDField = new TextField();
-        SIDField.setPromptText("Student ID");
+        SIDField.setPromptText("Staff ID");
         SIDField.setMaxWidth(200);
-        SIDField.setPrefHeight(35);
+        SIDField.setPadding(new Insets(10));
 
+
+        //PasswordBox
         passwordField = new PasswordField();
         passwordField.setPromptText("Password");
         passwordField.setMaxWidth(200);
-        passwordField.setPrefHeight(35);
+        passwordField.setPadding(new Insets(10));
 
+
+        //Login Button
         Button loginbutton = new Button("Login");
         loginbutton.setMaxWidth(100);
-        loginbutton.setPrefHeight(35);
         loginbutton.setOnAction(e -> handleLogin());
 
-        Hyperlink switchToLecturerLink = new Hyperlink("If you're a lecturer, click here.");
-        switchToLecturerLink.setStyle("-fx-font-size: 12;");
-        switchToLecturerLink.setOnAction(e -> {
-            LecturerLogIn lecturerApp = new LecturerLogIn();
-            lecturerApp.start(primaryStage);
+        //Hyperlink for Staff to Student Page
+        Hyperlink switchToStudentLink = new Hyperlink("If you're a student, click here.");
+        switchToStudentLink.setStyle("-fx-font-size: 20;");
+        switchToStudentLink.setOnAction(e -> {
+            StudentLogin studentApp = new StudentLogin();
+            studentApp.start(primaryStage);
         });
 
-        loginContent.getChildren().addAll(
-                ImgSteve,
-                Greeting,
-                LoginGuide,
-                SIDField,
-                passwordField,
-                loginbutton,
-                switchToLecturerLink
-        );
+        //Main Components
+        loginContent.getChildren().addAll(Greeting, LoginGuide, SIDField, passwordField);
 
-        StackPane centerWrapper = new StackPane(loginContent);
-        centerWrapper.setAlignment(Pos.CENTER);
+        VBox buttonwithLinkContainer = new VBox(15);
+        buttonwithLinkContainer.setAlignment(Pos.CENTER);
+        buttonwithLinkContainer.setPadding(new Insets(20,0,0,0));
+        loginContent.getChildren().addAll(loginbutton, switchToStudentLink);
 
-        ScrollPane scrollPane = new ScrollPane(centerWrapper);
-        scrollPane.setFitToWidth(true);   // ✅ CRITICAL
-        scrollPane.setFitToHeight(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        loginContent.getChildren().addAll(buttonwithLinkContainer);
 
-        root.setCenter(scrollPane);
+        StackPane centreContainer = new StackPane(loginContent);
+        centreContainer.setAlignment(Pos.CENTER);
 
-        Scene scene = new Scene(root, 800, 600);
+
+
+        // Scene and Stage
+        root.setCenter(centreContainer);
+
+
+        Scene scene = new Scene(root, 1000, 800);
         primaryStage.setTitle("Login Page");
         primaryStage.setScene(scene);
-        primaryStage.centerOnScreen();
         primaryStage.show();
+
+
     }
+
 
     private void handleLogin() {
         String username = SIDField.getText();
@@ -137,14 +163,17 @@ public class StudentLogIn extends Application {
             alert.showAndWait();
         }
         else {
-            StudentHome homePageStudent = new StudentHome(username);
-            homePageStudent.show(getPrimaryStage());
+            LecturerHome homePageLecturer = new LecturerHome(username);
+            homePageLecturer.show(getPrimaryStage());
         }
 
 
     }
 
+
     public static void main(String[] args) {
         launch(args);
     }
+
+
 }

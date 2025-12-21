@@ -1,6 +1,5 @@
-package frontend.student;
+package org.example.ap_steve.frontend.student;
 
-import frontend.student.ChatBot;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.geometry.Pos;
@@ -12,7 +11,6 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import org.example.ap_steve.frontend.student.StudentLogin;
 
 public class StudentHome {
 
@@ -62,17 +60,17 @@ public class StudentHome {
         WelBox.getChildren().addAll(welcomeLabel, messageLabel);
         header.getChildren().add(WelBox);
 
-        Region spacer = new  Region();
+
+        Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         header.getChildren().add(spacer);
 
         //Logout Button
-        Button Logout = new Button("Logout");
-        Logout.setOnAction(e -> onLogoutClicked());
-        header.getChildren().add(Logout);
+        Button logoutButton = new Button("Logout");
+        logoutButton.setOnAction(event -> onLogoutClicked());
+        header.getChildren().add(logoutButton);
 
         root.setTop(header);
-
 
         //6 Module Buttons
         VBox ModVBox = new VBox(30);
@@ -114,7 +112,7 @@ public class StudentHome {
         button.setOnAction(e -> {
             System.out.println(moduleName + " selected!");
             Stage primaryStage = (Stage) button.getScene().getWindow();
-            ChatBot chatbotPage = new ChatBot(moduleName, userName);
+            ChatbotPage chatbotPage = new ChatbotPage(moduleName, userName);
             chatbotPage.start(primaryStage);
         });
         return button;
@@ -128,8 +126,8 @@ public class StudentHome {
         confirmation.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 try {
-                    StudentLogin loginpage = new StudentLogin();
-                    loginpage.start(primaryStage);
+                    StudentLogin loginPage = new StudentLogin();
+                    loginPage.start(primaryStage);
                 } catch (Exception e) {
                     e.printStackTrace();
                     primaryStage.close();

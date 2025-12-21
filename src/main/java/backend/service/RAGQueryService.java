@@ -21,9 +21,7 @@ public class RAGQueryService {
         this.gptService = gptService;
     }
 
-    /**
-     * Search for documents relevant to the query
-     */
+    // search for relevant documents
     public List<SearchResult> searchDocuments(String query) {
         try {
             System.out.println("🔍 Searching for: " + query);
@@ -42,16 +40,13 @@ public class RAGQueryService {
             System.out.println("   After filtering: " + results.size() + " highly relevant");
 
             return results;
-
         } catch (Exception e) {
             System.err.println("❌ Search failed: " + e.getMessage());
             throw new RuntimeException("Search failed: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Generate an answer using GPT based on relevant documents
-     */
+    // generate answer using GPT based on the documents
     public String generateAnswer(String question, List<SearchResult> relevantDocs) {
         if (relevantDocs.isEmpty()) {
             return "I couldn't find relevant information in the uploaded documents about '" + question + "'.";
@@ -73,7 +68,6 @@ public class RAGQueryService {
 
         String mergedContext = contextBuilder.toString();
 
-        // code aware gpt prompt
         String prompt = """
                 You are a C++ tutor. Use ONLY the context from the uploaded documents.
                 - If the context contains code, you may infer variable values or pointer relationships from the code.
@@ -90,27 +84,24 @@ public class RAGQueryService {
 
         System.out.println("📝 Prompt prepared for GPT:\n" + prompt);
 
-        //call gpt via openai api
-        String answer;
         try {
-            answer = gptService.chatCompletion(prompt); // wrapper for OpenAI API
+            return gptService.chatCompletion(prompt);
         } catch (Exception e) {
             System.err.println("❌ GPT call failed: " + e.getMessage());
             e.printStackTrace();
-
-            // Fallback: show top chunk preview
-            answer = "Based on the uploaded documents, here's what I found:\n\n" +
+            return "Based on the uploaded documents, here's what I found:\n\n" +
                     topChunks.get(0).getContentPreview(300) +
                     "\n\n💡 Answer summary: The documents contain information about this topic.";
         }
-
-        return answer;
     }
 
     /**
-     * Generate documents for quiz questions (optional)
+     * Generate quiz questions based on a topic
+     * @param topic the topic for the quiz
+     * @param format "plain" for sentence questions, "mcq" for multiple-choice
+     * @param numberOfQuestions number of questions for plain format (ignored for MCQ)
      */
-    public List<SearchResult> generateQuizQuestions(String topic, int numberOfQuestions) {
+    public List<String> generateQuiz(String topic, String format, int numberOfQuestions) {
         List<SearchResult> topicDocs = searchDocuments(topic);
 
         if (topicDocs.isEmpty()) {
@@ -118,6 +109,60 @@ public class RAGQueryService {
         }
 
         System.out.println("🎯 Found " + topicDocs.size() + " documents for quiz on: " + topic);
-        return topicDocs;
+
+        List<String> quizQuestions = new ArrayList<>();
+
+        for (SearchResult doc : topicDocs) {
+            String prompt;
+            if ("mcq".equalsIgnoreCase(format)) {
+                prompt = """
+                        You are an exam question generator.
+                        Based on the following text, create **ONE multiple choice question** with:
+                        - 4 options labeled A, B, C, D
+                        - Indicate which option is correct
+                        - Keep the question and options clear and concise
+
+                        Text:
+                        %s
+
+                        Output format:
+                        Question: ...
+                        A: ...
+                        B: ...
+                        C: ...
+                        D: ...
+                        Answer: ...
+                        """.formatted(doc.getContent());
+            } else {
+                prompt = """
+                        You are an exam question generator.
+                        Based on the following text, create **ONE multiple choice question** with:
+                        - 4 options labeled A, B, C, D
+                        - Indicate which option is correct
+                        - Keep the question and options clear and concise
+
+                        Text:
+                        %s
+
+                        Output format:
+                        Question: ...
+                        A: ...
+                        B: ...
+                        C: ...
+                        D: ...
+                        Answer: ...
+                        """.formatted(doc.getContent());
+            }
+
+            try {
+                String generated = gptService.chatCompletion(prompt);
+                quizQuestions.add(generated);
+            } catch (Exception e) {
+                System.err.println("❌ GPT quiz generation failed: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        return quizQuestions;
     }
 }

@@ -10,11 +10,12 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +31,7 @@ public class ChatBot extends Application {
 
     public ChatBot() {
         this.chatService = new ChatService();
-        this.chatHistoryManager = new ChatHistoryManager(); // JSON-based persistent storage
+        this.chatHistoryManager = new ChatHistoryManager();
     }
 
     public ChatBot(String moduleName, String username) {
@@ -44,10 +45,9 @@ public class ChatBot extends Application {
     public void start(Stage stage) {
         this.primaryStage = stage;
 
-        // --- Top bar ---
+        // Top bar
         Button backButton = new Button("Back");
         backButton.setOnAction(e -> onBackClicked(stage));
-
         Label moduleLabel = new Label(moduleName != null ? moduleName : "General Chat");
         moduleLabel.setFont(Font.font(14));
         moduleLabel.setTextAlignment(TextAlignment.CENTER);
@@ -59,27 +59,35 @@ public class ChatBot extends Application {
         topBar.setPadding(new Insets(10));
         topBar.setStyle("-fx-border-color: lightgray; -fx-border-width: 0 0 1 0;");
 
-        // --- Chat history section ---
+        // Chat history
+        chatHistoryList = new ListView<>();
+        refreshChatHistoryList();
+        VBox.setVgrow(chatHistoryList, Priority.ALWAYS);
+
+        chatHistoryList.getSelectionModel().selectedItemProperty().addListener(
+                (obs, oldVal, newVal) -> {
+                    if (newVal != null) onChatHistorySelected(newVal);
+                }
+        );
+
+        // Search panel
         TextField searchField = new TextField();
         searchField.setPromptText("Search for a chat...");
         searchField.setMaxWidth(200);
 
         Button searchButton = new Button("Search");
-        searchButton.setOnAction(e -> onSearchClicked(searchField.getText()));
+        searchButton.setOnAction(e -> {
+            String query = searchField.getText().trim().toLowerCase();
+            chatHistoryList.getItems().clear();
+            List<String> filtered = chatHistoryManager.getAllChats().keySet().stream()
+                    .filter(k -> k.toLowerCase().contains(query))
+                    .collect(Collectors.toList());
+            if (filtered.isEmpty()) filtered.add("No results found for: " + searchField.getText());
+            chatHistoryList.getItems().addAll(filtered);
+        });
 
         VBox searchBoxContainer = new VBox(5, searchField, searchButton);
-        searchBoxContainer.setAlignment(Pos.TOP_CENTER);
-
-        chatHistoryList = new ListView<>();
-        refreshChatHistoryList();
-
-        chatHistoryList.getSelectionModel().selectedItemProperty().addListener(
-                (obs, oldVal, newVal) -> {
-                    if (newVal != null) {
-                        onChatHistorySelected(newVal);
-                    }
-                }
-        );
+        searchBoxContainer.setAlignment(Pos.CENTER);
 
         VBox chatHistoryBox = new VBox(10);
         chatHistoryBox.setPadding(new Insets(10));
@@ -88,12 +96,11 @@ public class ChatBot extends Application {
         chatHistoryBox.getChildren().addAll(historyLabel, chatHistoryList, searchBoxContainer);
         chatHistoryBox.setPrefWidth(250);
 
-        // --- Main chat section ---
+        // Chat area
         chatDisplay = new TextArea();
         chatDisplay.setEditable(false);
         chatDisplay.setWrapText(true);
         chatDisplay.setPrefHeight(300);
-        chatDisplay.setPromptText("Conversation will appear here...");
         chatDisplay.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 12;");
 
         Image avatarImage = new Image(getClass().getResource("/images/STEVE.png").toExternalForm());
@@ -106,15 +113,14 @@ public class ChatBot extends Application {
         steveMessage.setTextAlignment(TextAlignment.CENTER);
 
         TextField userInputField = new TextField();
-        userInputField.setPromptText("Ask a question");
+        userInputField.setPromptText("Ask a question or generate a quiz ('mcq example_topic')");
         userInputField.setMaxWidth(400);
 
-        Button askButton = new Button("Ask S.T.E.V.E");
-        askButton.setStyle("-fx-font-size: 14; -fx-padding: 8 20;");
+        Button askButton = new Button("Send");
         askButton.setOnAction(e -> {
-            String question = userInputField.getText().trim();
-            if (!question.isEmpty()) {
-                onAskClicked(question);
+            String input = userInputField.getText().trim();
+            if (!input.isEmpty()) {
+                handleUserInput(input);
                 userInputField.clear();
             }
         });
@@ -140,79 +146,41 @@ public class ChatBot extends Application {
         stage.show();
     }
 
-    private void refreshChatHistoryList() {
-        chatHistoryList.getItems().clear();
-        chatHistoryList.getItems().addAll(chatHistoryManager.getAllChats().keySet());
-    }
-
-    private void onBackClicked(Stage primaryStage) {
-        StudentHome homePage = new StudentHome(username);
-        homePage.show(primaryStage);
-    }
-
-    private void onSearchClicked(String query) {
-        if (query == null || query.trim().isEmpty()) return;
-
-        String searchTerm = query.trim().toLowerCase();
-        chatHistoryList.getItems().clear();
-
-        List<String> filtered = chatHistoryManager.getAllChats().keySet().stream()
-                .filter(q -> q.toLowerCase().contains(searchTerm))
-                .collect(Collectors.toList());
-
-        if (filtered.isEmpty()) {
-            chatHistoryList.getItems().add("No results found for: " + query);
-        } else {
-            chatHistoryList.getItems().addAll(filtered);
-        }
-    }
-
-    private void onChatHistorySelected(String selectedHistory) {
-        chatDisplay.clear();
-        List<String> conversation = chatHistoryManager.getChat(selectedHistory);
-        if (conversation != null) {
-            conversation.forEach(line -> chatDisplay.appendText(line + "\n"));
-        }
-    }
-
-    private void onAskClicked(String question) {
-        appendToChat("User: " + question);
-
-        appendToChat("S.T.E.V.E is thinking...\n");
+    private void handleUserInput(String input) {
+        appendToChat("You: " + input);
 
         new Thread(() -> {
             try {
-                ChatService.ChatResponse response = chatService.askQuestion(question);
+                ChatService.ChatResponse response = chatService.askQuestion(input);
 
                 Platform.runLater(() -> {
-                    // Remove "thinking" line
-                    String currentText = chatDisplay.getText();
-                    if (currentText.endsWith("S.T.E.V.E is thinking...\n")) {
-                        chatDisplay.setText(currentText.substring(0,
-                                currentText.length() - "S.T.E.V.E is thinking...\n".length()));
+                    // Save to chat history
+                    List<String> conversation = chatHistoryManager.getChat(input);
+                    if (conversation == null) conversation = new ArrayList<>();
+                    conversation.add("You: " + input);
+
+                    if (response.getQuestions() != null && !response.getQuestions().isEmpty()) {
+                        appendToChat("✅ Quiz generated (" + response.getQuestions().size() + " questions):");
+                        List<String> finalConversation = conversation;
+                        response.getQuestions().forEach(q -> {
+                            appendToChat((finalConversation.size()) + ". " + q);
+                            finalConversation.add(q);
+                        });
+                    } else {
+                        appendToChat("S.T.E.V.E: " + response.getAnswer());
+                        conversation.add("S.T.E.V.E: " + response.getAnswer());
                     }
 
-                    String answer = response.getAnswer();
-                    appendToChat("S.T.E.V.E: " + answer);
+                    chatHistoryManager.addChat(input, conversation);
 
-                    // Save conversation to persistent history
-                    List<String> conversation = chatHistoryManager.getChat(question);
-                    if (conversation == null) conversation = new java.util.ArrayList<>();
-                    conversation.add("User: " + question);
-                    conversation.add("S.T.E.V.E: " + answer);
-                    chatHistoryManager.addChat(question, conversation);
-
-                    // Refresh ListView if new
-                    if (!chatHistoryList.getItems().contains(question)) {
-                        chatHistoryList.getItems().add(0, question);
+                    // Refresh history list
+                    if (!chatHistoryList.getItems().contains(input)) {
+                        chatHistoryList.getItems().add(0, input);
                     }
                 });
 
             } catch (Exception e) {
-                Platform.runLater(() -> {
-                    appendToChat("❌ Error: " + e.getMessage());
-                    System.err.println("Chat error: " + e.getMessage());
-                });
+                Platform.runLater(() -> appendToChat("❌ Error: " + e.getMessage()));
             }
         }).start();
     }
@@ -222,6 +190,22 @@ public class ChatBot extends Application {
             chatDisplay.appendText(text + "\n");
             chatDisplay.setScrollTop(Double.MAX_VALUE);
         });
+    }
+
+    private void refreshChatHistoryList() {
+        chatHistoryList.getItems().clear();
+        chatHistoryList.getItems().addAll(chatHistoryManager.getAllChats().keySet());
+    }
+
+    private void onChatHistorySelected(String selectedHistory) {
+        chatDisplay.clear();
+        List<String> conversation = chatHistoryManager.getChat(selectedHistory);
+        if (conversation != null) conversation.forEach(line -> chatDisplay.appendText(line + "\n"));
+    }
+
+    private void onBackClicked(Stage primaryStage) {
+        StudentHome homePage = new StudentHome(username);
+        homePage.show(primaryStage);
     }
 
     public static void main(String[] args) {

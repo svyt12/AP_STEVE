@@ -2,9 +2,9 @@ package backend.controller;
 
 import backend.rag.SearchResult;
 import backend.service.RAGQueryService;
-import frontend.student.ChatHistoryManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import frontend.student.ChatHistoryManager;
 
 import java.util.*;
 
@@ -31,36 +31,69 @@ public class ChatController {
     /** Ask a new question **/
     @PostMapping("/ask")
     public Map<String, Object> askQuestion(@RequestBody Map<String, String> request) {
-        String question = request.get("question");
-        System.out.println("\n💭 Question received: " + question);
+        String rawInput = request.get("question");
+        if (rawInput == null || rawInput.trim().isEmpty()) {
+            return Map.of("error", true, "message", "Question is empty");
+        }
+
+        String input = rawInput.trim();
+        boolean isQuiz = false;
+        String format = "plain";
+        String topic = input;
+
+        // Detect quiz/MCQ
+        if (input.toLowerCase().startsWith("mcq ")) {
+            isQuiz = true;
+            format = "mcq";
+            topic = input.substring(4).trim(); // remove "mcq " prefix
+        } else if (input.toLowerCase().startsWith("quiz ")) {
+            isQuiz = true;
+            format = "plain";
+            topic = input.substring(5).trim(); // remove "quiz " prefix
+        }
 
         try {
-            // RAG query
-            List<SearchResult> relevantDocs = ragService.searchDocuments(question);
-            String answer = ragService.generateAnswer(question, relevantDocs);
+            if (isQuiz) {
+                // Generate quiz
+                List<String> questions = ragService.generateQuiz(topic, format, 5);
 
-            System.out.println("✅ Generated answer with " + relevantDocs.size() + " relevant documents");
+                // Save quiz to chat history
+                List<String> conversation = new ArrayList<>();
+                conversation.add("User: " + input);
+                conversation.addAll(questions.stream().map(q -> "Quiz: " + q).toList());
+                chatHistoryManager.addChat(input, conversation);
 
-            // --- Save to persistent chat history ---
-            List<String> conversation = new ArrayList<>();
-            conversation.add("User: " + question);
-            conversation.add("AI: " + answer);
-            chatHistoryManager.addChat(question, conversation);
+                return Map.of(
+                        "questionType", format.equals("mcq") ? "MCQ_QUIZ" : "PLAIN_QUIZ",
+                        "topic", topic,
+                        "questions", questions,
+                        "timestamp", new Date().toString()
+                );
 
-            return Map.of(
-                    "answer", answer,
-                    "relevantDocuments", relevantDocs,
-                    "questionType", "RAG_QUERY",
-                    "timestamp", new Date().toString()
-            );
+            } else {
+                // Normal RAG question
+                List<SearchResult> relevantDocs = ragService.searchDocuments(input);
+                String answer = ragService.generateAnswer(input, relevantDocs);
+
+                // Save to chat history
+                List<String> conversation = new ArrayList<>();
+                conversation.add("User: " + input);
+                conversation.add("S.T.E.V.E: " + answer);
+                chatHistoryManager.addChat(input, conversation);
+
+                return Map.of(
+                        "questionType", "RAG_QUERY",
+                        "answer", answer,
+                        "relevantDocuments", relevantDocs,
+                        "timestamp", new Date().toString()
+                );
+            }
 
         } catch (Exception e) {
-            System.err.println("❌ Error processing question: " + e.getMessage());
             e.printStackTrace();
             return Map.of(
-                    "answer", "Sorry, I encountered an error: " + e.getMessage(),
                     "error", true,
-                    "questionType", "ERROR"
+                    "message", "Failed to process request: " + e.getMessage()
             );
         }
     }

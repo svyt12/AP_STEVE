@@ -12,6 +12,7 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import org.example.ap_steve.frontend.student.StudentLogin;
 
 public class StudentHome {
 
@@ -25,6 +26,7 @@ public class StudentHome {
 
 
     public void show(Stage stage) {
+        this.primaryStage = stage;
         //Main container
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(20));
@@ -60,6 +62,14 @@ public class StudentHome {
         WelBox.getChildren().addAll(welcomeLabel, messageLabel);
         header.getChildren().add(WelBox);
 
+        Region spacer = new  Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        header.getChildren().add(spacer);
+
+        //Logout Button
+        Button Logout = new Button("Logout");
+        Logout.setOnAction(e -> onLogoutClicked());
+        header.getChildren().add(Logout);
 
         root.setTop(header);
 
@@ -108,5 +118,24 @@ public class StudentHome {
             chatbotPage.start(primaryStage);
         });
         return button;
+    }
+
+    private void onLogoutClicked() {
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Logout Confirmation");
+        confirmation.setHeaderText("Are you sure you want to logout?");
+
+        confirmation.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                try {
+                    StudentLogIn loginpage = new StudentLogIn();
+                    loginpage.start(primaryStage);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    primaryStage.close();
+                    StudentLogIn.main(new String[0]);
+                }
+            }
+        });
     }
 }

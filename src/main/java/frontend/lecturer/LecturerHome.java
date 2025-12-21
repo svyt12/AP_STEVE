@@ -11,7 +11,7 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import org.example.ap_steve.frontend.lecturer.LecturerLogin;
+
 
 public class LecturerHome {
 

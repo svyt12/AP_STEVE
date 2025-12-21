@@ -2,10 +2,11 @@ package backend.controller;
 
 import backend.rag.SearchResult;
 import backend.service.RAGQueryService;
+import frontend.student.ChatHistoryManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -15,34 +16,42 @@ public class ChatController {
     @Autowired
     private RAGQueryService ragService;
 
-    @GetMapping("/health")
-    public String health() {
-        return "✅ Chat endpoint is healthy at " + new java.util.Date();
+    private final ChatHistoryManager chatHistoryManager;
+
+    public ChatController() {
+        this.chatHistoryManager = new ChatHistoryManager(); // JSON-based persistent storage
     }
 
+    /** Health check **/
+    @GetMapping("/health")
+    public String health() {
+        return "✅ Chat endpoint is healthy at " + new Date();
+    }
+
+    /** Ask a new question **/
     @PostMapping("/ask")
     public Map<String, Object> askQuestion(@RequestBody Map<String, String> request) {
         String question = request.get("question");
         System.out.println("\n💭 Question received: " + question);
 
         try {
-//            // Check if it's a quiz request
-//            if (question.toLowerCase().contains("quiz")) {
-//                System.out.println("Detected quiz request");
-//                return generateQuiz(question);
-//            }
-
-            // Regular RAG query
+            // RAG query
             List<SearchResult> relevantDocs = ragService.searchDocuments(question);
             String answer = ragService.generateAnswer(question, relevantDocs);
 
             System.out.println("✅ Generated answer with " + relevantDocs.size() + " relevant documents");
 
+            // --- Save to persistent chat history ---
+            List<String> conversation = new ArrayList<>();
+            conversation.add("User: " + question);
+            conversation.add("AI: " + answer);
+            chatHistoryManager.addChat(question, conversation);
+
             return Map.of(
                     "answer", answer,
                     "relevantDocuments", relevantDocs,
                     "questionType", "RAG_QUERY",
-                    "timestamp", new java.util.Date().toString()
+                    "timestamp", new Date().toString()
             );
 
         } catch (Exception e) {
@@ -56,45 +65,19 @@ public class ChatController {
         }
     }
 
-//    private Map<String, Object> generateQuiz(String question) {
-//        // Extract topic from question
-//        String topic = extractTopicFromQuestion(question);
-//
-//        System.out.println("📝 Generating quiz for topic: " + topic);
-//
-//        // In a real implementation, you would:
-//        // 1. Search for documents about the topic
-//        // 2. Generate quiz questions based on content
-//        // 3. Return the quiz
-//
-//        return Map.of(
-//                "answer", "🎯 I'll generate a quiz about: " + topic +
-//                        "\n\n📚 Quiz Content: [Would be generated from your documents]" +
-//                        "\n\n1. What is " + topic + "?" +
-//                        "\n   A) Option A" +
-//                        "\n   B) Option B" +
-//                        "\n   C) Option C" +
-//                        "\n   D) Option D" +
-//                        "\n\n2. Explain the main concept of " + topic +
-//                        "\n\n[This is a placeholder - real quiz would come from your documents]",
-//                "questionType", "QUIZ",
-//                "quizTopic", topic,
-//                "isQuiz", true,
-//                "timestamp", new java.util.Date().toString()
-//        );
-//    }
-//
-//    private String extractTopicFromQuestion(String question) {
-//        // Simple topic extraction - remove "quiz" and common words
-//        String cleaned = question.toLowerCase()
-//                .replace("quiz", "")
-//                .replace("generate", "")
-//                .replace("create", "")
-//                .replace("make", "")
-//                .replace("about", "")
-//                .replace("on", "")
-//                .trim();
+    /** Get all chat history (just the query names) **/
+    @GetMapping("/history")
+    public Set<String> getAllChatHistory() {
+        return chatHistoryManager.getAllChats().keySet();
+    }
 
-
-
+    /** Get full conversation by query **/
+    @GetMapping("/history/{query}")
+    public List<String> getChat(@PathVariable String query) {
+        List<String> conversation = chatHistoryManager.getChat(query);
+        if (conversation == null) {
+            return Collections.singletonList("No chat found for query: " + query);
+        }
+        return conversation;
+    }
 }

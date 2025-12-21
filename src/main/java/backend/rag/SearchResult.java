@@ -1,12 +1,5 @@
 package backend.rag;
 
-/**
- * Represents a single search result from the vector store.
- * This is a Data Transfer Object (DTO) that packages together:
- * - Document ID
- * - Content/text
- * - Similarity score
- */
 public class SearchResult {
     private final String documentId;
     private final String content;
@@ -24,8 +17,6 @@ public class SearchResult {
         this.content = content;
         this.similarity = similarity;
     }
-
-    // ========== GETTERS ==========
 
     /**
      * @return The document/chunk ID
@@ -55,7 +46,7 @@ public class SearchResult {
         return similarity * 100.0f;
     }
 
-    // ========== UTILITY METHODS ==========
+
 
     /**
      * Get a preview of the content (first N characters)
@@ -84,7 +75,6 @@ public class SearchResult {
         return isHighlyRelevant(0.7f); // Default threshold
     }
 
-    // ========== OVERRIDDEN METHODS ==========
 
     @Override
     public String toString() {
@@ -117,7 +107,6 @@ public class SearchResult {
         return result;
     }
 
-    // ========== BUILDER PATTERN (Optional) ==========
 
     /**
      * Builder for creating SearchResult objects (optional but useful)
@@ -160,7 +149,6 @@ public class SearchResult {
         return new Builder();
     }
 
-    // ========== COMPARATORS ==========
 
     /**
      * Comparator for sorting by similarity (descending - highest first)

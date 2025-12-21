@@ -105,11 +105,9 @@ public class OpenAiEmbeddingService implements EmbeddingService {
         }
 
         try {
-            // ========== REAL OPENAI API CALL ==========
-            // Clean and prepare text
             String cleanedText = cleanTextForEmbedding(text);
 
-            // Create JSON request
+            // JSON request
             Map<String, Object> requestMap = new HashMap<>();
             requestMap.put("model", embeddingModel);
             requestMap.put("input", cleanedText);
@@ -119,7 +117,7 @@ public class OpenAiEmbeddingService implements EmbeddingService {
 
             System.out.println("📤 Calling OpenAI API with model: " + embeddingModel);
 
-            // Build HTTP request
+            //HTTP request
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.openai.com/v1/embeddings"))
                     .header("Authorization", "Bearer " + apiKey)
@@ -129,7 +127,6 @@ public class OpenAiEmbeddingService implements EmbeddingService {
                     .timeout(Duration.ofSeconds(30))
                     .build();
 
-            // Send request
             HttpResponse<String> response = httpClient.send(
                     request,
                     HttpResponse.BodyHandlers.ofString()
@@ -137,7 +134,6 @@ public class OpenAiEmbeddingService implements EmbeddingService {
 
             System.out.println("OpenAI Response Status: " + response.statusCode());
 
-            // Check response
             if (response.statusCode() == 401) {
                 System.err.println("Invalid OpenAI API key (401 Unauthorized)");
                 throw new RuntimeException("Invalid OpenAI API key. Please check your key.");
@@ -148,7 +144,6 @@ public class OpenAiEmbeddingService implements EmbeddingService {
                 );
             }
 
-            // Parse response
             String responseBody = response.body();
             Map<String, Object> responseMap = objectMapper.readValue(
                     responseBody, Map.class);
@@ -158,7 +153,6 @@ public class OpenAiEmbeddingService implements EmbeddingService {
                 throw new RuntimeException("No embedding data in OpenAI response");
             }
 
-            // Convert List<Double> to float[]
             List<Double> embeddingList = (List<Double>) data.get(0).get("embedding");
             if (embeddingList == null || embeddingList.isEmpty()) {
                 throw new RuntimeException("Empty embedding in response");

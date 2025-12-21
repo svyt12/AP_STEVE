@@ -113,7 +113,7 @@ public class ChatBot extends Application {
         steveMessage.setTextAlignment(TextAlignment.CENTER);
 
         TextField userInputField = new TextField();
-        userInputField.setPromptText("Ask a question or type 'quiz about [topic]'...");
+        userInputField.setPromptText("Ask a question");
         userInputField.setMaxWidth(400);
 
         // Ask button
@@ -215,11 +215,7 @@ public class ChatBot extends Application {
                     String answer = response.getAnswer();
                     appendToChat("S.T.E.V.E: " + answer);
 
-                    if (question.toLowerCase().contains("quiz")) {
-                        appendToChat("\nQuiz Mode Activated!");
-                        appendToChat("   Topic: " + extractTopic(question));
-                        appendToChat("   [Quiz would be displayed here in a real implementation]\n");
-                    }
+//
                 });
 
             } catch (Exception e) {

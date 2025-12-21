@@ -26,11 +26,11 @@ public class ChatController {
         System.out.println("\n💭 Question received: " + question);
 
         try {
-            // Check if it's a quiz request
-            if (question.toLowerCase().contains("quiz")) {
-                System.out.println("🎯 Detected quiz request");
-                return generateQuiz(question);
-            }
+//            // Check if it's a quiz request
+//            if (question.toLowerCase().contains("quiz")) {
+//                System.out.println("Detected quiz request");
+//                return generateQuiz(question);
+//            }
 
             // Regular RAG query
             List<SearchResult> relevantDocs = ragService.searchDocuments(question);
@@ -56,49 +56,45 @@ public class ChatController {
         }
     }
 
-    private Map<String, Object> generateQuiz(String question) {
-        // Extract topic from question
-        String topic = extractTopicFromQuestion(question);
+//    private Map<String, Object> generateQuiz(String question) {
+//        // Extract topic from question
+//        String topic = extractTopicFromQuestion(question);
+//
+//        System.out.println("📝 Generating quiz for topic: " + topic);
+//
+//        // In a real implementation, you would:
+//        // 1. Search for documents about the topic
+//        // 2. Generate quiz questions based on content
+//        // 3. Return the quiz
+//
+//        return Map.of(
+//                "answer", "🎯 I'll generate a quiz about: " + topic +
+//                        "\n\n📚 Quiz Content: [Would be generated from your documents]" +
+//                        "\n\n1. What is " + topic + "?" +
+//                        "\n   A) Option A" +
+//                        "\n   B) Option B" +
+//                        "\n   C) Option C" +
+//                        "\n   D) Option D" +
+//                        "\n\n2. Explain the main concept of " + topic +
+//                        "\n\n[This is a placeholder - real quiz would come from your documents]",
+//                "questionType", "QUIZ",
+//                "quizTopic", topic,
+//                "isQuiz", true,
+//                "timestamp", new java.util.Date().toString()
+//        );
+//    }
+//
+//    private String extractTopicFromQuestion(String question) {
+//        // Simple topic extraction - remove "quiz" and common words
+//        String cleaned = question.toLowerCase()
+//                .replace("quiz", "")
+//                .replace("generate", "")
+//                .replace("create", "")
+//                .replace("make", "")
+//                .replace("about", "")
+//                .replace("on", "")
+//                .trim();
 
-        System.out.println("📝 Generating quiz for topic: " + topic);
 
-        // In a real implementation, you would:
-        // 1. Search for documents about the topic
-        // 2. Generate quiz questions based on content
-        // 3. Return the quiz
 
-        return Map.of(
-                "answer", "🎯 I'll generate a quiz about: " + topic +
-                        "\n\n📚 Quiz Content: [Would be generated from your documents]" +
-                        "\n\n1. What is " + topic + "?" +
-                        "\n   A) Option A" +
-                        "\n   B) Option B" +
-                        "\n   C) Option C" +
-                        "\n   D) Option D" +
-                        "\n\n2. Explain the main concept of " + topic +
-                        "\n\n[This is a placeholder - real quiz would come from your documents]",
-                "questionType", "QUIZ",
-                "quizTopic", topic,
-                "isQuiz", true,
-                "timestamp", new java.util.Date().toString()
-        );
-    }
-
-    private String extractTopicFromQuestion(String question) {
-        // Simple topic extraction - remove "quiz" and common words
-        String cleaned = question.toLowerCase()
-                .replace("quiz", "")
-                .replace("generate", "")
-                .replace("create", "")
-                .replace("make", "")
-                .replace("about", "")
-                .replace("on", "")
-                .trim();
-
-        // Capitalize first letter
-        if (!cleaned.isEmpty()) {
-            return cleaned.substring(0, 1).toUpperCase() + cleaned.substring(1);
-        }
-        return "the uploaded documents";
-    }
 }

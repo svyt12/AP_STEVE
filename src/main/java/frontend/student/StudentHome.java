@@ -128,12 +128,12 @@ public class StudentHome {
         confirmation.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 try {
-                    StudentLogin loginpage = new StudentLogin();
+                    StudentLogIn loginpage = new StudentLogIn();
                     loginpage.start(primaryStage);
                 } catch (Exception e) {
                     e.printStackTrace();
                     primaryStage.close();
-                    StudentLogin.main(new String[0]);
+                    StudentLogIn.main(new String[0]);
                 }
             }
         });

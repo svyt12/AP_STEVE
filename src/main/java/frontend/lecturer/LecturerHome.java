@@ -127,12 +127,12 @@ public class LecturerHome {
         confirmation.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 try {
-                    LecturerLogin loginPage = new LecturerLogin();
+                    LecturerLogIn loginPage = new LecturerLogIn();
                     loginPage.start(primaryStage);
                 } catch (Exception e) {
                     e.printStackTrace();
                     primaryStage.close();
-                    LecturerLogin.main(new String[0]);
+                    LecturerLogIn.main(new String[0]);
                 }
             }
         });

@@ -34,8 +34,9 @@ public class Application {
 
     @Bean
     public VectorStore vectorStore() {
-        return new InMemoryVectorStore();
+        return new PersistentVectorStore("C:/rag-data");
     }
+
 
     @Bean
     public EmbeddingService embeddingService() {

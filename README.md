@@ -11,7 +11,7 @@ This is a Group Assignment Project for the Advanced Programming Module done by C
 -Highlight key points 
 -Generate revision notes 
 
-3. Code Explanation 
+3. Code Explanation
 -Generate MCQs, True/False, and short answer questions based on RAG-retrieved course material.  
 -Provide correct answers along with explanations. 
 
